@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:controls="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
+             xmlns:material="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
+             xmlns:vm="clr-namespace:AvaloniaManager.ViewModels"
+             xmlns:local="clr-namespace:AvaloniaManager.Models"
+             xmlns:converters="clr-namespace:AvaloniaManager.Converters"
+             mc:Ignorable="d"
+             d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="AvaloniaManager.Views.EmployeesView"
+             x:DataType="vm:EmployeesViewModel"
+             Name="Root">
+
+    <UserControl.Resources>
+        <converters:ElementIndexConverter x:Key="IndexConverter"/>
+    </UserControl.Resources>
+
+    <StackPanel Margin="16" Spacing="16">
+        <!-- DataGrid с нумерацией -->
+        <DataGrid ItemsSource="{Binding Employees}"
+                 SelectedItem="{Binding SelectedEmployee}"
+                 AutoGenerateColumns="False"
+                 IsReadOnly="True"
+                 Name="EmployeesDataGrid">
+
+            <DataGrid.Columns>
+                <!-- Остальные колонки -->
+                <DataGridTextColumn Header="ID" Binding="{Binding Id}" IsVisible="False"/>
+                <DataGridTextColumn Header="ФИО" Binding="{Binding FullName}" Width="*"/>
+                <DataGridTextColumn Header="Псевдоним" Binding="{Binding NickName}" Width="*"/>
+                <DataGridTextColumn Header="Тип договора" Binding="{Binding ContractName}" Width="*"/>
+                <DataGridTextColumn Header="№ договора" Binding="{Binding ContractNumber}" Width="Auto"/>
+                <DataGridCheckBoxColumn Header="Штатный" Binding="{Binding Shtatni}" Width="Auto"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Пагинация -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16">
+            <Button Content="← Назад"
+                   Command="{Binding PreviousPageCommand}"
+                   IsEnabled="{Binding HasPreviousPage}"/>
+            <TextBlock Text="{Binding CurrentPage, StringFormat='Страница {0}'}"
+                      VerticalAlignment="Center"/>
+            <Button Content="Вперед →"
+                   Command="{Binding NextPageCommand}"
+                   IsEnabled="{Binding HasNextPage}"/>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="AvaloniaManager.Views.ArticlesView">
+	<UserControl.Styles>
+		<Style Selector="TextBlock.Subheadline">
+			<Setter Property="Margin" Value="0, 16" />
+		</Style>
+		<Style Selector="TextBlock.Subheadline2">
+			<Setter Property="Margin" Value="0, 8" />
+		</Style>
+		<Style Selector="TextBlock.Content">
+			<Setter Property="Margin" Value="0, 4" />
+			<Setter Property="HorizontalAlignment" Value="Left" />
+		</Style>
+	</UserControl.Styles>
+	<TextBlock Text="Тут статьи будут" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+</UserControl>

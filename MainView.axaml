@@ -1,0 +1,132 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:controls="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
+             xmlns:dialogHostAvalonia="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
+             xmlns:views="clr-namespace:AvaloniaManager.Views"
+             xmlns:vm="clr-namespace:AvaloniaManager.ViewModels"
+             mc:Ignorable="d"
+             d:DesignWidth="800" d:DesignHeight="450"
+			 x:DataType="vm:MainWindowViewModel"
+			 x:Class="AvaloniaManager.MainView">
+
+	<Design.DataContext>
+		<vm:MainViewModel/>
+	</Design.DataContext>
+
+	<UserControl.Styles>
+		<Style Selector="TextBlock.Subheadline">
+			<Setter Property="Margin" Value="0, 16" />
+		</Style>
+		<Style Selector="TextBlock.Subheadline2">
+			<Setter Property="Margin" Value="0, 8" />
+		</Style>
+		<Style Selector="TextBlock.Content">
+			<Setter Property="Margin" Value="0, 4" />
+			<Setter Property="HorizontalAlignment" Value="Left" />
+		</Style>
+		<Style Selector="TextBlock.Headline6">
+			<Setter Property="Opacity" Value="1"/>
+			<Setter Property="Transitions">
+				<Transitions>
+					<DoubleTransition Property="Opacity" Duration="0:0:0.3"/>
+				</Transitions>
+			</Setter>
+		</Style>
+	</UserControl.Styles>
+	
+	<dialogHostAvalonia:DialogHost Identifier="MainDialogHost">
+		<controls:SnackbarHost HostName="Root">
+			<controls:NavigationDrawer Name="LeftDrawer" Classes="permanent"
+                          LeftDrawerOpened="{Binding IsDrawerOpen, Mode=TwoWay}">
+				<controls:NavigationDrawer.LeftDrawerContent>
+					<ScrollViewer>
+						<StackPanel>
+							<controls:ColorZone Mode="Accent" Height="180">
+								<StackPanel>
+									<Image Width="96" Height="140"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Source="/Assets/avalonia-logo.ico" Margin="0,0,0,-8" 
+										   PointerPressed="MaterialIcon_OnPointerPressed"/>
+									<TextBlock Classes="Headline6" Text="Avalonia Manager" HorizontalAlignment="Center" />
+								</StackPanel>
+							</controls:ColorZone>
+							<ListBox Classes="NoScroll" Name="DrawerList" SelectedIndex="0">
+								<ListBox.Styles>
+									<Style Selector="ListBoxItem">
+										<Setter Property="Height" Value="48" />
+										<Setter Property="Padding" Value="16,0" />
+										<Setter Property="VerticalContentAlignment" Value="Center" />
+									</Style>
+									<Style Selector="ListBoxItem:disabled">
+										<Setter Property="Opacity" Value="0.5" />
+									</Style>
+								</ListBox.Styles>
+								<ListBoxItem IsVisible="{Binding ShowAuthItem}">Авторизация</ListBoxItem>
+								<ListBoxItem IsEnabled="{Binding IsAuthenticated}">Сотрудники</ListBoxItem>
+								<ListBoxItem IsEnabled="{Binding IsAuthenticated}">Статьи</ListBoxItem>
+								<ListBoxItem IsEnabled="{Binding IsAuthenticated}">Отчеты</ListBoxItem>
+							</ListBox>
+						</StackPanel>
+					</ScrollViewer>
+				</controls:NavigationDrawer.LeftDrawerContent>
+
+				<DockPanel LastChildFill="true">
+					<controls:ColorZone Name="PART_AppBarContainer" VerticalAlignment="Top"
+                                       DockPanel.Dock="Top" Height="56" Mode="PrimaryMid" ZIndex="1">
+						<Grid Margin="16">
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="24" />
+								<ColumnDefinition Width="32" />
+								<ColumnDefinition Width="*" />
+								<ColumnDefinition Width="32" />
+								<ColumnDefinition Width="Auto" />
+							</Grid.ColumnDefinitions>
+							<ToggleButton Name="NavDrawerSwitch" Theme="{StaticResource MaterialFlatButton}"
+                                          Width="32" Height="32" Padding="4">
+								<avalonia:MaterialIcon Kind="Menu" Width="24" Height="24" />
+							</ToggleButton>
+							<TextBlock Grid.Column="2" Classes="Headline6"
+           Text="{Binding CurrentPageTitle}"
+           VerticalAlignment="Center" />
+							<Menu Grid.Column="4" Height="32" Padding="0" Margin="0">
+								<MenuItem Height="32" Width="32">
+									<MenuItem.Header>
+										<avalonia:MaterialIcon Kind="DotsVertical" Width="24" Height="24"/>
+									</MenuItem.Header>
+									<MenuItem Header="About">
+										<MenuItem.Icon>
+											<avalonia:MaterialIcon Kind="Information" Width="24" Height="24"/>
+										</MenuItem.Icon>
+									</MenuItem>
+								</MenuItem>
+							</Menu>
+						</Grid>
+					</controls:ColorZone>
+
+					<ScrollViewer Name="mainScroller" DockPanel.Dock="Top">
+						<Carousel Name="PageCarousel" HorizontalAlignment="Stretch" 
+								  SelectedIndex="{Binding SelectedPageIndex, Mode=TwoWay}">
+							<Carousel.Styles>
+								<Style Selector="Carousel#PageCarousel:not(.no-transitions)">
+									<Setter Property="PageTransition">
+										<PageSlide Duration="0.25" SlideOutEasing="CircularEaseOut"
+                                                  SlideInEasing="CircularEaseOut" />
+									</Setter>
+								</Style>
+							</Carousel.Styles>
+
+							<!-- Cтраницы -->
+							  <views:AuthorizationView IsVisible="{Binding ShowAuthItem}" DataContext="{Binding}"/>
+							  <views:EmployeesView IsVisible="{Binding IsAuthenticated}"/>
+							  <views:ArticlesView IsVisible="{Binding IsAuthenticated}"/>
+							  <views:ReportsView IsVisible="{Binding IsAuthenticated}"/>
+						</Carousel>
+					</ScrollViewer>
+				</DockPanel>
+			</controls:NavigationDrawer>
+		</controls:SnackbarHost>
+	</dialogHostAvalonia:DialogHost>
+</UserControl>

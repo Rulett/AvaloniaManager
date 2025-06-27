@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:p1="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
+             xmlns:vm="clr-namespace:AvaloniaManager.ViewModels"
+             mc:Ignorable="d"
+             d:DesignWidth="400" d:DesignHeight="300"
+             x:Class="AvaloniaManager.Views.AuthorizationView"
+             x:DataType="vm:MainWindowViewModel">
+	<!-- Added proper x:DataType pointing to MainViewModel -->
+
+	<Grid VerticalAlignment="Center" HorizontalAlignment="Center" Width="300">
+		<StackPanel Spacing="16">
+			<TextBlock Text="Авторизация" Classes="Headline5" HorizontalAlignment="Center"/>
+
+			<TextBox UseFloatingWatermark="True"
+                     Classes="revealPasswordButton"
+                     p1:TextFieldAssist.Label="Пароль"
+                     Watermark="Введите пароль"
+                     PasswordChar="*"
+                     Text="{Binding Password, Mode=TwoWay}"/>
+
+			<Button Content="Войти"
+                    Command="{Binding LoginCommand}"
+                    HorizontalAlignment="Stretch"/>
+
+			<TextBlock Text="Неверный пароль!"
+                      Foreground="Red"
+                      IsVisible="{Binding LoginFailed}"/>
+		</StackPanel>
+	</Grid>
+</UserControl>

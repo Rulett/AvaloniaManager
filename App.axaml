@@ -1,0 +1,36 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:themes="clr-namespace:Material.Styles.Themes;assembly=Material.Styles"
+			 xmlns:dialogHostAvalonia="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
+			 xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+			 xmlns:grammars="clr-namespace:TextMateSharp.Grammars;assembly=TextMateSharp.Grammars"
+			 xmlns:dataGrid="clr-namespace:Material.Avalonia.DataGrid;assembly=Material.Avalonia.DataGrid"
+             x:Class="AvaloniaManager.App"
+             xmlns:local="using:AvaloniaManager"
+             RequestedThemeVariant="Default">
+	<!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+
+    <Application.DataTemplates>
+        <local:ViewLocator/>
+    </Application.DataTemplates>
+  
+    <Application.Styles>
+		<themes:MaterialTheme PrimaryColor="Purple" SecondaryColor="Lime">
+			<themes:MaterialTheme.Resources>
+				<ResourceDictionary>
+					<ResourceDictionary.ThemeDictionaries>
+						<ResourceDictionary x:Key="{x:Static themes:Theme.MaterialLight}">
+							<grammars:ThemeName x:Key="AvaloniaEditThemeName">Light</grammars:ThemeName>
+						</ResourceDictionary>
+						<ResourceDictionary x:Key="{x:Static themes:Theme.MaterialDark}">
+							<grammars:ThemeName x:Key="AvaloniaEditThemeName">SolarizedDark</grammars:ThemeName>
+						</ResourceDictionary>
+					</ResourceDictionary.ThemeDictionaries>
+				</ResourceDictionary>
+			</themes:MaterialTheme.Resources>
+		</themes:MaterialTheme>
+		<dialogHostAvalonia:DialogHostStyles />
+		<avalonia:MaterialIconStyles />
+		<dataGrid:MaterialDataGridStyles/>
+	</Application.Styles>
+</Application>
