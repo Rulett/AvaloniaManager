@@ -8,6 +8,7 @@ namespace AvaloniaManager
 {
     public partial class App : Application
     {
+        public static MainWindow MainWindow { get; private set; }
         public override void Initialize()
         {
             AvaloniaXamlLoader.Load(this);

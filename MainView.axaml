@@ -10,7 +10,8 @@
              mc:Ignorable="d"
              d:DesignWidth="800" d:DesignHeight="450"
 			 x:DataType="vm:MainWindowViewModel"
-			 x:Class="AvaloniaManager.MainView">
+			 x:Class="AvaloniaManager.MainView"
+			 Loaded="UserControl_Loaded">
 
 	<Design.DataContext>
 		<vm:MainViewModel/>
@@ -38,7 +39,8 @@
 	</UserControl.Styles>
 	
 	<dialogHostAvalonia:DialogHost Identifier="MainDialogHost">
-		<controls:SnackbarHost HostName="Root">
+		<controls:SnackbarHost  HostName="Root">
+
 			<controls:NavigationDrawer Name="LeftDrawer" Classes="permanent"
                           LeftDrawerOpened="{Binding IsDrawerOpen, Mode=TwoWay}">
 				<controls:NavigationDrawer.LeftDrawerContent>

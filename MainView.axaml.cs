@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.ReactiveUI;
 using Avalonia.Threading;
+using AvaloniaManager.Services;
 using AvaloniaManager.ViewModels;
 using Material.Styles.Controls;
 using Material.Styles.Themes;
@@ -16,9 +17,20 @@ namespace AvaloniaManager
 {
     public partial class MainView : ReactiveUserControl<MainWindowViewModel>
     {
+        private SnackbarHost? _snackbarHost;
         public MainView()
         {
             InitializeComponent();
+
+            this.AttachedToVisualTree += (s, e) => {
+                _snackbarHost = this.FindControl<SnackbarHost>("Root");
+                NotificationManagerService.SnackbarHost = _snackbarHost;
+            };
+
+            if (_snackbarHost == null)
+            {
+                Console.WriteLine("SnackbarHost не найден!");
+            }
 
             NavDrawerSwitch.Click += (s, e) =>
             {
@@ -80,5 +92,12 @@ namespace AvaloniaManager
             materialTheme.BaseTheme =
                 materialTheme.BaseTheme == BaseThemeMode.Light ? BaseThemeMode.Dark : BaseThemeMode.Light;
         }
+
+        private void UserControl_Loaded(object? sender, RoutedEventArgs e)
+        {
+            NotificationManagerService.SnackbarHost = this.FindControl<SnackbarHost>("Root");
+            NotificationManagerService.ShowSuccess("Добро пожаловать!");
+        }
+
     }
 }

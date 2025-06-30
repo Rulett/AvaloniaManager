@@ -71,11 +71,10 @@ namespace AvaloniaManager.ViewModels
                 {
                     Password = "";
                     ShowAuthItem = false;
-                    SelectedPageIndex = 1; // Автоматически переключаем на "Сотрудники"
+                    SelectedPageIndex = 1; // Выбор страницы после ввода пароля
                 }
             });
 
-            // Исправленная подписка на изменения SelectedPageIndex
             this.WhenAnyValue(x => x.SelectedPageIndex)
                 .Subscribe(new AnonymousObserver<int>(_ => UpdatePageTitle()));
         }

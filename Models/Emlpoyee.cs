@@ -12,35 +12,35 @@ namespace AvaloniaManager.Models
     {
         public int Id { get; set; }
 
-        [Required]
-        [MaxLength(255)]
+        [Required(ErrorMessage = "Фамилия обязательна")]
+        [MaxLength(255, ErrorMessage = "Максимальная длина 255 символов")]
         public string SurName { get; set; }
 
-        [Required]
-        [MaxLength(255)]
+        [Required(ErrorMessage = "Имя обязательно")]
+        [MaxLength(255, ErrorMessage = "Максимальная длина 255 символов")]
         public string Name { get; set; }
 
-        [Required]
-        [MaxLength(255)]
+        [Required(ErrorMessage = "Отчество обязательно")]
+        [MaxLength(255, ErrorMessage = "Максимальная длина 255 символов")]
         public string FatherName { get; set; }
 
-        [Required]
-        [MaxLength(80)]
-        public string ContractName { get; set; } 
+        [Required(ErrorMessage = "Тип договора обязателен")]
+        public string ContractName { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Номер договора обязателен")]
+        [Range(1, int.MaxValue, ErrorMessage = "Номер должен быть положительным числом")]
         public int ContractNumber { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Дата начала обязательна")]
         public DateTime ContractStart { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Дата окончания обязательна")]
         public DateTime ContractEnd { get; set; }
 
-        [MaxLength(255)]
-        public string? NickName { get; set; } 
+        [MaxLength(255, ErrorMessage = "Максимальная длина 255 символов")]
+        public string NickName { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Укажите штатный статус")]
         public bool Shtatni { get; set; }
 
         // Навигационное свойство
