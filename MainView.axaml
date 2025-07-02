@@ -36,6 +36,22 @@
 				</Transitions>
 			</Setter>
 		</Style>
+		<!-- Стили для DialogHost кнопок -->
+		<Style Selector="Button.Primary">
+			<Setter Property="Background" Value="#1976D2"/>
+			<Setter Property="Foreground" Value="White"/>
+			<Setter Property="Padding" Value="12,6"/>
+			<Setter Property="CornerRadius" Value="4"/>
+		</Style>
+
+		<Style Selector="Button.Outlined">
+			<Setter Property="BorderBrush" Value="#1976D2"/>
+			<Setter Property="BorderThickness" Value="1"/>
+			<Setter Property="Foreground" Value="#1976D2"/>
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="Padding" Value="12,6"/>
+			<Setter Property="CornerRadius" Value="4"/>
+		</Style>
 	</UserControl.Styles>
 	
 	<dialogHostAvalonia:DialogHost Identifier="MainDialogHost">

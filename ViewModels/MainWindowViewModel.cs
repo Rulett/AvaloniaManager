@@ -1,11 +1,12 @@
-﻿using ReactiveUI;
+﻿using AvaloniaManager.Services;
+using ReactiveUI;
 using System.Reactive;
 
 namespace AvaloniaManager.ViewModels
 {
     public class MainWindowViewModel : ReactiveObject
     {
-        private bool _isAuthenticated;
+        private bool _isAuthenticated=true;
         public bool IsAuthenticated
         {
             get => _isAuthenticated;
@@ -69,9 +70,14 @@ namespace AvaloniaManager.ViewModels
 
                 if (IsAuthenticated)
                 {
+                    NotificationManagerService.ShowSuccess("Авторизация прошла успешно!");
                     Password = "";
                     ShowAuthItem = false;
                     SelectedPageIndex = 1; // Выбор страницы после ввода пароля
+                }
+                else
+                {
+                    NotificationManagerService.ShowError("Неверный пароль!");
                 }
             });
 
@@ -79,7 +85,7 @@ namespace AvaloniaManager.ViewModels
                 .Subscribe(new AnonymousObserver<int>(_ => UpdatePageTitle()));
         }
 
-        private void UpdatePageTitle()
+        private void UpdatePageTitle() 
         {
             CurrentPageTitle = SelectedPageIndex switch
             {

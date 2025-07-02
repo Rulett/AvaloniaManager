@@ -21,13 +21,6 @@
 			<converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
 			<converters:BoolToVisibilityConverter x:Key="InverseBoolToVisibility" IsInverse="True"/>
 
-			<!-- Стиль для невалидных ячеек -->
-			<Style x:Key="HoverDataGridCellStyle" Selector="DataGridCell:pointerover">
-				<Setter Property="Background" Value="#FFF5F5"/>
-				<Setter Property="BorderBrush" Value="Red"/>
-				<Setter Property="BorderThickness" Value="1"/>
-			</Style>
-
 			<col:ArrayList x:Key="ContractTypes">
 				<sys:String>Авторский договор</sys:String>
 				<sys:String>Договор на создание и использование служебного произведения</sys:String>
@@ -36,13 +29,28 @@
 			</col:ArrayList>
 		</ResourceDictionary>
 	</UserControl.Resources>
+	
+	 <UserControl.Styles>
+		 <!-- Стиль для невалидных ячеек ?????пока хз-->
+		 <!-- <Style Selector="DataGrid TextBox:invalid, DataGrid ComboBox:invalid">
+			<Setter Property="BorderBrush" Value="Red"/>
+			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="Background" Value="#FFF5F5"/>
+		</Style> -->
+		 <!-- Стиль для кнопок "Удалить" -->
+		<Style Selector="Button.Danger">
+        <Setter Property="Background" Value="#FF5252"/>
+        <Setter Property="Foreground" Value="White"/>
+    </Style>
+	</UserControl.Styles>  
 
 	<StackPanel Margin="16" Spacing="16">
-		<!-- DataGrid с нумерацией -->
+		<!-- Основной DataGrid -->
 		<DataGrid ItemsSource="{Binding Employees}"
                  SelectedItem="{Binding SelectedEmployee}"
                  AutoGenerateColumns="False"
                  IsReadOnly="True"
+				 HorizontalScrollBarVisibility="Visible"
                  Name="EmployeesDataGrid"
                  IsVisible="{Binding IsAddingMode, Converter={StaticResource InverseBoolToVisibility}}">
 
@@ -61,10 +69,20 @@
                                    Width="*"/>
 				<DataGridTextColumn Header="Псевдоним" Binding="{Binding NickName}" Width="*"/>
 				<DataGridCheckBoxColumn Header="Штатный" Binding="{Binding Shtatni}" Width="Auto"/>
+				<DataGridTemplateColumn Header="Действия" Width="Auto">
+					<DataGridTemplateColumn.CellTemplate>
+						<DataTemplate>
+							<Button Content="Удалить"
+									Command="{Binding Path=DataContext.DeleteCommand, ElementName=Root}"
+									CommandParameter="{Binding}"
+									Classes="Danger"/>
+						</DataTemplate>
+					</DataGridTemplateColumn.CellTemplate>
+				</DataGridTemplateColumn>
 			</DataGrid.Columns>
 		</DataGrid>
 
-		<Border Background="#F5F5F5" Padding="10" CornerRadius="5"
+		<Border Padding="10" CornerRadius="5"
                IsVisible="{Binding IsAddingMode, Converter={StaticResource BoolToVisibility}}">
 			<StackPanel Spacing="10">
 				<TextBlock Text="Добавление новых сотрудников" FontWeight="Bold" FontSize="16"/>
@@ -72,13 +90,13 @@
 				<!-- DataGrid для новых сотрудников -->
 				<DataGrid ItemsSource="{Binding NewEmployees}"
 						  AutoGenerateColumns="False"
-						  >
+						  HorizontalScrollBarVisibility="Visible">
 
 					<DataGrid.Columns>
-						<!-- Обязательные поля -->
-						<DataGridTextColumn Header="Фамилия" Binding="{Binding SurName}" Width="*"/>
-						<DataGridTextColumn Header="Имя" Binding="{Binding Name}" Width="*"/>
-						<DataGridTextColumn Header="Отчество" Binding="{Binding FatherName}" Width="*"/>
+						<!-- ФИО -->
+						<DataGridTextColumn Header="Фамилия" Binding="{Binding SurName}" Width="auto"/>
+						<DataGridTextColumn Header="Имя" Binding="{Binding Name}" Width="auto"/>
+						<DataGridTextColumn Header="Отчество" Binding="{Binding FatherName}" Width="auto"/>
 
 						<!-- Выпадающий список для типа договора -->
 						<DataGridTemplateColumn Header="Тип договора" Width="auto">
@@ -105,17 +123,30 @@
 										   Width="auto"/>
 
 						<DataGridTextColumn Header="Псевдоним" Binding="{Binding NickName}" Width="auto"/>
-						<DataGridCheckBoxColumn Header="Штатный" Binding="{Binding Shtatni}" Width="Auto"/>
+						<DataGridCheckBoxColumn Header="Штатный" Binding="{Binding Shtatni}" Width="auto"/>
 					</DataGrid.Columns>
 				</DataGrid>
+				<!-- Команды при добавлении -->
+				<Grid>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*"/>
+						<!-- для кнопок "Добавить строку" и "Сброс" -->
+						<ColumnDefinition Width="*"/>
+						<!-- для кнопок "Сохранить" и "Выход" -->
+					</Grid.ColumnDefinitions>
 
-				<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
-					<Button Content="Добавить строку" Command="{Binding AddNewRowCommand}"/>
-					<Button Content="Сохранить" Command="{Binding SaveEmployeesCommand}"
-							Classes="Primary"/>
-					<Button Content="Сброс" Command="{Binding ResetAddingCommand}"/>
-					<Button Content="Выход" Command="{Binding ExitCommand}"/>
-				</StackPanel>
+					<!-- Кнопки слева -->
+					<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Left">
+						<Button Content="Добавить строку" Command="{Binding AddNewRowCommand}"/>
+						<Button Content="Сброс" Command="{Binding ResetAddingCommand}"/>
+					</StackPanel>
+
+					<!-- Кнопки справа -->
+					<StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+						<Button Content="Сохранить" Command="{Binding SaveEmployeesCommand}" Classes="Primary"/>
+						<Button Content="Выход" Command="{Binding ExitCommand}" Classes="Outlined"/>
+					</StackPanel>
+				</Grid>
 			</StackPanel>
 		</Border>
 
@@ -125,17 +156,37 @@
                     IsVisible="{Binding IsAddingMode, Converter={StaticResource InverseBoolToVisibility}}"/>
 		</StackPanel>
 
-		<!-- Пагинация -->
-		<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16"
-                    IsVisible="{Binding IsAddingMode, Converter={StaticResource InverseBoolToVisibility}}">
-			<Button Content="← Назад"
-                   Command="{Binding PreviousPageCommand}"
-                   IsEnabled="{Binding HasPreviousPage}"/>
-			<TextBlock Text="{Binding CurrentPage, StringFormat='Страница {0}'}"
-                      VerticalAlignment="Center"/>
-			<Button Content="Вперед →"
-                   Command="{Binding NextPageCommand}"
-                   IsEnabled="{Binding HasNextPage}"/>
-		</StackPanel>
+		<!-- Пагинация и слайдер -->
+		<Grid IsVisible="{Binding IsAddingMode, Converter={StaticResource InverseBoolToVisibility}}">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="Auto"/>
+				<ColumnDefinition Width="*"/>
+			</Grid.ColumnDefinitions>
+
+			<!-- Кнопки пагинации-->
+			<StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16">
+				<Button Content="← Назад"
+					   Command="{Binding PreviousPageCommand}"
+					   IsEnabled="{Binding HasPreviousPage}"/>
+				<TextBlock Text="{Binding CurrentPage, StringFormat='Страница {0}'}"
+						  VerticalAlignment="Center"/>
+				<Button Content="Вперед →"
+					   Command="{Binding NextPageCommand}"
+					   IsEnabled="{Binding HasNextPage}"/>
+			</StackPanel>
+
+			<!-- Слайдер-->
+			<StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+				<TextBlock Text="Сотрудников на странице:" VerticalAlignment="Center"/>
+				<Slider Width="150" Minimum="5" Maximum="50"
+						Value="{Binding PageSize, Mode=TwoWay}"
+						IsSnapToTickEnabled="True"
+						Classes="Discrete"
+						TickFrequency="5"
+						VerticalAlignment="Center"/>
+				<TextBlock Text="{Binding PageSize}" VerticalAlignment="Center" Margin="5,0,0,0"/>
+			</StackPanel>
+		</Grid>
 	</StackPanel>
 </UserControl>

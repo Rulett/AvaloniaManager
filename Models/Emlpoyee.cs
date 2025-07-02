@@ -38,7 +38,7 @@ namespace AvaloniaManager.Models
         public DateTime ContractEnd { get; set; }
 
         [MaxLength(255, ErrorMessage = "Максимальная длина 255 символов")]
-        public string NickName { get; set; }
+        public string? NickName { get; set; }
 
         [Required(ErrorMessage = "Укажите штатный статус")]
         public bool Shtatni { get; set; }

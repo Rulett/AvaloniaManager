@@ -1,17 +1,31 @@
-﻿using AvaloniaManager.Data;
+﻿using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Layout;
+using AvaloniaManager.Data;
 using AvaloniaManager.Models;
 using AvaloniaManager.Services;
+using Material.Dialog.Icons;
+using Material.Dialog;
+using Material.Dialog.Enums;
+using Material.Styles.Controls;
 using Microsoft.EntityFrameworkCore;
 using ReactiveUI;
 using System;
+using System.Windows.Input;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
+
 using System.Threading.Tasks;
+using Material.Dialog.ViewModels.Elements;
+using DialogHostAvalonia;
+using Avalonia.Media;
+using GalaSoft.MvvmLight.Command;
+using Material.Icons.Avalonia;
 
 namespace AvaloniaManager.ViewModels
 {
@@ -21,7 +35,13 @@ namespace AvaloniaManager.ViewModels
         private Employee _selectedEmployee;
         private string _searchText;
         private int _currentPage = 1;
-        private const int PageSize = 15;
+        private int _pageSize = 15;
+        
+        public int PageSize
+        {
+            get => _pageSize;
+            set => this.RaiseAndSetIfChanged(ref _pageSize, value);
+        }
 
         public ObservableCollection<Employee> Employees
         {
@@ -96,7 +116,7 @@ namespace AvaloniaManager.ViewModels
             });
 
             // Автоматическая загрузка при изменении параметров
-            this.WhenAnyValue(x => x.CurrentPage, x => x.SearchText)
+            this.WhenAnyValue(x => x.CurrentPage, x => x.SearchText, x=> x.PageSize)
                 .Throttle(TimeSpan.FromMilliseconds(300))
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(_ => LoadEmployees().ConfigureAwait(false));
@@ -131,10 +151,11 @@ namespace AvaloniaManager.ViewModels
                 Employees = new ObservableCollection<Employee>(employees);
                 this.RaisePropertyChanged(nameof(HasNextPage));
                 this.RaisePropertyChanged(nameof(HasPreviousPage));
+                Debug.WriteLine($"Загружено {employees.Count} сотрудников");
             }
             catch (Exception ex)
             {
-                // Обработка ошибок
+                // Обработка ошибок БД
                 Debug.WriteLine($"Ошибка загрузки: {ex.Message}");
             }
         }
@@ -157,58 +178,58 @@ namespace AvaloniaManager.ViewModels
         }
 
         private async Task SaveEmployees()
-{
-    // Проверка на пустые строки
-    if (NewEmployees.Count == 0)
-    {
-        await ShowErrorDialog("Нет данных для сохранения. Добавьте хотя бы одного сотрудника.");
-        return;
-    }
-
-    // Валидация всех записей
-    var errors = new List<string>();
-    foreach (var employee in NewEmployees)
-    {
-        // Проверка обязательных полей
-        if (string.IsNullOrWhiteSpace(employee.SurName))
-            errors.Add("Фамилия обязательна для заполнения");
-        if (string.IsNullOrWhiteSpace(employee.Name))
-            errors.Add("Имя обязательно для заполнения");
-        if (string.IsNullOrWhiteSpace(employee.ContractName))
-            errors.Add("Тип договора обязателен для заполнения");
-        
-        // Для числовых полей проверяем на значение по умолчанию
-        if (employee.ContractNumber == 0) // или другое значение по умолчанию
-            errors.Add("Номер договора обязателен для заполнения");
-
-        // Дополнительная проверка дат
-        if (employee.ContractStart >= employee.ContractEnd)
         {
-            errors.Add("Дата окончания должна быть позже даты начала");
+            // Проверка на пустые строки
+            if (NewEmployees.Count == 0)
+            {
+                await ShowErrorDialog("Нет данных для сохранения. Добавьте хотя бы одного сотрудника.");
+                return;
+            }
+
+            // Валидация всех записей
+            var errors = new List<string>();
+            foreach (var employee in NewEmployees)
+            {
+                // Проверка строковых полей
+                if (string.IsNullOrWhiteSpace(employee.SurName))
+                    errors.Add("Фамилия обязательна для заполнения");
+                if (string.IsNullOrWhiteSpace(employee.Name))
+                    errors.Add("Имя обязательно для заполнения");
+                if (string.IsNullOrWhiteSpace(employee.ContractName))
+                    errors.Add("Тип договора обязателен для заполнения");
+
+                // Проверка числовых полей
+                if (employee.ContractNumber <= 0) 
+                    errors.Add("Номер договора обязателен для заполнения");
+
+                // Проверка дат
+                if (employee.ContractStart >= employee.ContractEnd)
+                {
+                    errors.Add("Дата окончания должна быть позже даты начала");
+                }
+            }
+
+            if (errors.Any())
+            {
+                await ShowErrorDialog(string.Join("\n", errors.Distinct()));
+                return;
+            }
+
+            try
+            {
+                await using var db = new AppDbContext();
+                db.Employees.AddRange(NewEmployees);
+                await db.SaveChangesAsync();
+
+                await ShowSuccessDialog("Данные успешно добавлены");
+                IsAddingMode = false;
+                await LoadEmployees();
+            }
+            catch (Exception ex)
+            {
+                await ShowErrorDialog($"Ошибка сохранения: {ex.Message}");
+            }
         }
-    }
-
-    if (errors.Any())
-    {
-        await ShowErrorDialog(string.Join("\n", errors.Distinct()));
-        return;
-    }
-
-    try
-    {
-        await using var db = new AppDbContext();
-        db.Employees.AddRange(NewEmployees);
-        await db.SaveChangesAsync();
-
-        await ShowSuccessDialog("Данные успешно сохранены");
-        IsAddingMode = false;
-        await LoadEmployees();
-    }
-    catch (Exception ex)
-    {
-        await ShowErrorDialog($"Ошибка сохранения: {ex.Message}");
-    }
-}
 
         private async Task ShowSuccessDialog(string message)
         {
@@ -216,20 +237,15 @@ namespace AvaloniaManager.ViewModels
             await Task.CompletedTask;
         }
 
-        private Task ShowErrorDialog(string message)
+        private async Task ShowErrorDialog(string message)
         {
             NotificationManagerService.ShowError(message);
-            return Task.CompletedTask;
+            await Task.CompletedTask;
         }
 
         private void ResetAdding()
         {
             NewEmployees.Clear();
-        }
-
-        private void AddEmployee()
-        {
-            // Логика добавления сотрудника
         }
 
         private void EditEmployee(Employee employee)
@@ -239,7 +255,115 @@ namespace AvaloniaManager.ViewModels
 
         private async Task DeleteEmployee(Employee employee)
         {
-            // Логика удаления сотрудника
+         try
+            {
+                 // Запрос подтверждения
+                 var confirm = await ShowConfirmationDialog(
+                     "Удаление сотрудника", 
+                     $"Вы уверены, что хотите удалить сотрудника {employee.FullName}?\n");
+        
+                    if (!confirm) return;
+
+                    await using var db = new AppDbContext();
+        
+                    // Проверка на связанные с сотрудником статьи с подтверждением
+                    var hasArticles = await db.Articles.AnyAsync(a => a.EmployeeId == employee.Id);
+                    if (hasArticles)
+                    {
+                        var articlesConfirm = await ShowConfirmationDialog(
+                            "Предупреждение", 
+                         "У этого сотрудника есть статьи, которые будут удалены. Продолжить?");
+            
+                     if (!articlesConfirm) return;
+                    }
+
+                // Удаление сотрудника
+                 db.Employees.Remove(employee);
+                 await db.SaveChangesAsync();
+
+                 await ShowSuccessDialog($"Сотрудник {employee.FullName} успешно удален");
+                 await LoadEmployees();
+            }
+            catch (Exception ex)
+                 {
+                    await ShowErrorDialog($"Ошибка при удалении: {ex.Message}");
+                 }
+        }
+
+        private async Task<bool> ShowConfirmationDialog(string title, string message)
+        {
+            var content = new StackPanel
+            {
+                Spacing = 16,
+                Margin = new Thickness(16),
+                Children =
+        {
+            new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 12,
+                Children =
+                {
+                    new MaterialIcon
+                    {
+                        Kind = Material.Icons.MaterialIconKind.InfoCircleOutline,
+                        Width = 32,
+                        Height = 32,
+                        Foreground = Brushes.DodgerBlue
+                    },
+                    new TextBlock
+                    {
+                        Text = title,
+                        FontWeight = FontWeight.Bold,
+                        FontSize = 18,
+                        VerticalAlignment = VerticalAlignment.Center
+                    }
+                }
+            },
+            new TextBlock
+            {
+                Text = message,
+                TextWrapping = TextWrapping.Wrap,
+                FontSize = 14,
+                Margin = new Thickness(44, 0, 0, 0)
+            }
+        }
+            };
+
+            var buttons = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Spacing = 8,
+                Margin = new Thickness(0, 16, 0, 0),
+                Children =
+        {
+            new Button
+            {
+                Content = "Да",
+                Classes = { "Primary" },
+                Width = 100,
+                Command = new RelayCommand(() => DialogHost.Close("MainDialogHost", true)),
+            },
+            new Button
+            {
+                Content = "Нет",
+                Classes = { "Outlined" },
+                Width = 100,
+                Command = new RelayCommand(() => DialogHost.Close("MainDialogHost", false)),
+            }
+        }
+            };
+
+            var mainContent = new StackPanel
+            {
+                Spacing = 0,
+                Children = { content, buttons }
+            };
+
+            // Показ диалога
+            var result = await DialogHost.Show(mainContent, "MainDialogHost");
+            return result is bool b && b;
         }
 
         private void NextPage()

@@ -22,10 +22,10 @@ namespace AvaloniaManager
         {
             InitializeComponent();
 
-            this.AttachedToVisualTree += (s, e) => {
+            
                 _snackbarHost = this.FindControl<SnackbarHost>("Root");
                 NotificationManagerService.SnackbarHost = _snackbarHost;
-            };
+            
 
             if (_snackbarHost == null)
             {
@@ -48,7 +48,6 @@ namespace AvaloniaManager
                         if (authenticated)
                         {
                             PageCarousel.SelectedIndex = 1;
-                            // Управление состоянием drawer через привязку
                             NavDrawerSwitch.IsChecked = true;
                         }
                         else
@@ -72,10 +71,9 @@ namespace AvaloniaManager
 
             var viewModel = (MainWindowViewModel)DataContext!;
 
-            // Если пытаемся выбрать авторизацию, когда она скрыта
             if (DrawerList.SelectedIndex == 0 && !viewModel.ShowAuthItem)
             {
-                DrawerList.SelectedIndex = 1; // Переключаем на первую рабочую страницу
+                DrawerList.SelectedIndex = 1;
             }
 
             // Обновляем SelectedPageIndex в ViewModel

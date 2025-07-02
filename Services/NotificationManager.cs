@@ -4,6 +4,7 @@ using Avalonia.Threading;
 using System;
 using System.Diagnostics;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Avalonia;
 
 namespace AvaloniaManager.Services
@@ -14,48 +15,49 @@ namespace AvaloniaManager.Services
 
         public static void ShowSuccess(string message)
         {
-            PostSnackbar($"✅ {message}", TimeSpan.FromSeconds(4), "#C8E6C9", "#2E7D32"); // зелёный
+            PostSnackbar($"✓ {message}", TimeSpan.FromSeconds(4), "#2E7D32"); // зелёный текст
         }
 
         public static void ShowError(string message)
         {
-            PostSnackbar($"❌ {message}", TimeSpan.FromSeconds(5), "#FFCDD2", "#C62828"); // красный
+            PostSnackbar($"✗ {message}", TimeSpan.FromSeconds(4), "#C62828"); // красный текст
         }
 
         public static void ShowInfo(string message)
         {
-            PostSnackbar($"ℹ️ {message}", TimeSpan.FromSeconds(4), "#BBDEFB", "#1565C0"); // синий
+            PostSnackbar($"i {message}", TimeSpan.FromSeconds(4), "#1565C0"); // синий текст
         }
 
         public static void ShowWarning(string message)
         {
-            PostSnackbar($"⚠️ {message}", TimeSpan.FromSeconds(4), "#FFF9C4", "#F9A825"); // жёлтый
+            PostSnackbar($"⚠ {message}", TimeSpan.FromSeconds(4), "#F9A825"); // жёлтый текст
         }
 
-
-        private static void PostSnackbar(string message, TimeSpan duration, string backgroundColor, string textColor)
+        private static void PostSnackbar(string message, TimeSpan duration, string textColor)
         {
-            Debug.WriteLine($"Показываем цветное уведомление: {message}");
+            Debug.WriteLine($"Показываем уведомление: {message}");
 
             var content = new Border
             {
-                Background = Avalonia.Media.Brush.Parse(backgroundColor),
-                Padding = new Thickness(16, 8),
+                Background = Brushes.White, 
+                Padding = new Thickness(16, 10), 
+                CornerRadius = new CornerRadius(4),
                 Child = new TextBlock
                 {
                     Text = message,
-                    Foreground = Avalonia.Media.Brush.Parse(textColor),
-                    FontWeight = Avalonia.Media.FontWeight.Bold
+                    Foreground = new SolidColorBrush(Color.Parse(textColor)),
+                    FontWeight = FontWeight.SemiBold,
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                    FontSize = 14 
                 }
             };
 
             var model = new SnackbarModel(content, duration);
 
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            Dispatcher.UIThread.Post(() =>
             {
-                Material.Styles.Controls.SnackbarHost.Post(model, null, DispatcherPriority.Normal);
+                SnackbarHost.Post(model, null, DispatcherPriority.Normal);
             });
         }
-
     }
 }
