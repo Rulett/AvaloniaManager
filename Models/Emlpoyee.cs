@@ -103,9 +103,6 @@ namespace AvaloniaManager.Models
         [NotMapped]
         public string ContractStatus => ContractEnd >= DateTime.Today ? "Действующий" : "Истекший";
 
-        [NotMapped]
-        public int DisplayNumber { get; set; }
-
         public Employee Clone()
         {
             return new Employee

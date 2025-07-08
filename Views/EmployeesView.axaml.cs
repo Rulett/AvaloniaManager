@@ -10,17 +10,6 @@ namespace AvaloniaManager.Views
         public EmployeesView()
         {
             InitializeComponent();
-            
         }
-
-        public static readonly StyledProperty<EmployeesViewModel> ViewModelProperty =
-        AvaloniaProperty.Register<EmployeesView, EmployeesViewModel>(nameof(ViewModel));
-
-        public EmployeesViewModel ViewModel
-        {
-            get => GetValue(ViewModelProperty);
-            set => SetValue(ViewModelProperty, value);
-        }
-
     }
 }

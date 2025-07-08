@@ -132,8 +132,6 @@ namespace AvaloniaManager
             NotificationManagerService.ShowSuccess("Добро пожаловать!");
         }
 
-        
-
         public void ResetDrawerSelection()
         {
             DrawerList.SelectedIndex = -1;
