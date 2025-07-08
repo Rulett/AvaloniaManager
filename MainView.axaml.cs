@@ -12,6 +12,7 @@ using Material.Styles.Themes.Base;
 using ReactiveUI;
 using System;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 
 namespace AvaloniaManager
 {
@@ -58,30 +59,64 @@ namespace AvaloniaManager
                     })
                     .DisposeWith(disposables);
 
+                // Синхронизация Carousel с SelectedPageIndex
+                this.WhenAnyValue(x => x.ViewModel!.SelectedPageIndex)
+                    .Subscribe(newIndex =>
+                    {
+                        PageCarousel.SelectedIndex = newIndex;
+                        mainScroller.Offset = Vector.Zero;
+                    })
+                    .DisposeWith(disposables);
+
                 // Обработка выбора в меню
                 DrawerList.SelectionChanged += OnDrawerSelectionChanged;
                 Disposable.Create(() => DrawerList.SelectionChanged -= OnDrawerSelectionChanged)
                     .DisposeWith(disposables);
             });
         }
+        private bool _isHandlingSelection = false;
 
-        private void OnDrawerSelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void OnDrawerSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (DrawerList.SelectedIndex < 0 || ViewModel == null) return;
+            if (_isHandlingSelection || DrawerList.SelectedIndex < 0 || ViewModel == null)
+                return;
 
-            var viewModel = (MainWindowViewModel)DataContext!;
-
-            if (DrawerList.SelectedIndex == 0 && !viewModel.ShowAuthItem)
+            try
             {
-                DrawerList.SelectedIndex = 1;
+                _isHandlingSelection = true;
+
+                Console.WriteLine($"Выбрана вкладка: {DrawerList.SelectedIndex}");
+                await ViewModel.NavigateCommand.Execute(DrawerList.SelectedIndex);
             }
+            finally
+            {
+                _isHandlingSelection = false;
+            }
+        }
 
-            // Обновляем SelectedPageIndex в ViewModel
-            viewModel.SelectedPageIndex = DrawerList.SelectedIndex;
+        protected override void OnInitialized()
+        {
+            base.OnInitialized();
 
-            // Синхронизируем Carousel
-            PageCarousel.SelectedIndex = viewModel.SelectedPageIndex;
-            mainScroller.Offset = Vector.Zero;
+            this.WhenAnyValue(x => x.ViewModel!.SelectedPageIndex)
+                .Subscribe(newIndex =>
+                {
+                    if (_isHandlingSelection) return;
+
+                    Console.WriteLine($"Синхронизация выделения: {newIndex}");
+
+                    _isHandlingSelection = true;
+                    try
+                    {
+                        PageCarousel.SelectedIndex = newIndex;
+                        mainScroller.Offset = Vector.Zero;
+                        DrawerList.SelectedIndex = newIndex;
+                    }
+                    finally
+                    {
+                        _isHandlingSelection = false;
+                    }
+                });
         }
 
         private void MaterialIcon_OnPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -95,6 +130,17 @@ namespace AvaloniaManager
         {
             NotificationManagerService.SnackbarHost = this.FindControl<SnackbarHost>("Root");
             NotificationManagerService.ShowSuccess("Добро пожаловать!");
+        }
+
+        
+
+        public void ResetDrawerSelection()
+        {
+            DrawerList.SelectedIndex = -1;
+            Dispatcher.UIThread.Post(() =>
+            {
+                DrawerList.SelectedIndex = ViewModel?.SelectedPageIndex ?? 0;
+            }, DispatcherPriority.Background);
         }
 
     }

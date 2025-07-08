@@ -49,26 +49,34 @@
 		<DataGrid ItemsSource="{Binding Employees}"
                  SelectedItem="{Binding SelectedEmployee}"
                  AutoGenerateColumns="False"
-                 IsReadOnly="True"
+                 IsReadOnly="False"
 				 HorizontalScrollBarVisibility="Visible"
                  Name="EmployeesDataGrid"
                  IsVisible="{Binding IsAddingMode, Converter={StaticResource InverseBoolToVisibility}}">
 
 			<DataGrid.Columns>
 				<DataGridTextColumn Header="ID" Binding="{Binding Id}" IsVisible="False"/>
-				<DataGridTextColumn Header="Фамилия" Binding="{Binding SurName}" Width="*"/>
-				<DataGridTextColumn Header="Имя" Binding="{Binding Name}" Width="*"/>
-				<DataGridTextColumn Header="Отчество" Binding="{Binding FatherName}" Width="*"/>
-				<DataGridTextColumn Header="Тип договора" Binding="{Binding ContractName}" Width="Auto"/>
-				<DataGridTextColumn Header="№ договора" Binding="{Binding ContractNumber}" Width="Auto"/>
+				<DataGridTextColumn Header="Фамилия" Binding="{Binding SurName, Mode=TwoWay}" Width="auto"/>
+				<DataGridTextColumn Header="Имя" Binding="{Binding Name, Mode=TwoWay}" Width="auto"/>
+				<DataGridTextColumn Header="Отчество" Binding="{Binding FatherName, Mode=TwoWay}" Width="auto"/>
+				<DataGridTemplateColumn Header="Тип договора" Width="auto">
+					<DataGridTemplateColumn.CellTemplate>
+						<DataTemplate>
+							<ComboBox Theme="{StaticResource MaterialFilledComboBox}"
+									  ItemsSource="{StaticResource ContractTypes}"
+									  SelectedItem="{Binding ContractName, Mode=TwoWay}"/>
+						</DataTemplate>
+					</DataGridTemplateColumn.CellTemplate>
+				</DataGridTemplateColumn>
+				<DataGridTextColumn Header="№ договора" Binding="{Binding ContractNumber, Mode=TwoWay}" Width="Auto"/>
 				<DataGridTextColumn Header="Начало договора"
-                   Binding="{Binding ContractStart, StringFormat='{}{0:dd.MM.yyyy}'}"
-                   Width="*"/>
+                   Binding="{Binding ContractStart, StringFormat='{}{0:dd.MM.yyyy}', Mode=TwoWay}"
+                   Width="auto"/>
 				<DataGridTextColumn Header="Окончание договора"
-                                   Binding="{Binding ContractEnd, StringFormat='{}{0:dd.MM.yyyy}'}"
-                                   Width="*"/>
-				<DataGridTextColumn Header="Псевдоним" Binding="{Binding NickName}" Width="*"/>
-				<DataGridCheckBoxColumn Header="Штатный" Binding="{Binding Shtatni}" Width="Auto"/>
+                                   Binding="{Binding ContractEnd, StringFormat='{}{0:dd.MM.yyyy}', Mode=TwoWay}"
+                                   Width="auto"/>
+				<DataGridTextColumn Header="Псевдоним" Binding="{Binding NickName, Mode=TwoWay}" Width="auto"/>
+				<DataGridCheckBoxColumn Header="Штатный" Binding="{Binding Shtatni, Mode=TwoWay}" Width="Auto"/>
 				<DataGridTemplateColumn Header="Действия" Width="Auto">
 					<DataGridTemplateColumn.CellTemplate>
 						<DataTemplate>
@@ -115,10 +123,10 @@
                                           Width="auto"/>
 
 						<!-- Даты -->
-						<DataGridTextColumn Header="Начало контракта"
+						<DataGridTextColumn Header="Начало договора"
 										   Binding="{Binding ContractStart, StringFormat='{}{0:dd.MM.yyyy}'}"
 										   Width="auto"/>
-						<DataGridTextColumn Header="Окончание контракта"
+						<DataGridTextColumn Header="Окончание договора"
 										   Binding="{Binding ContractEnd, StringFormat='{}{0:dd.MM.yyyy}'}"
 										   Width="auto"/>
 
@@ -154,6 +162,10 @@
 		<StackPanel Orientation="Horizontal" Spacing="10">
 			<Button Content="Добавить сотрудников" Command="{Binding AddEmployeeCommand}"
                     IsVisible="{Binding IsAddingMode, Converter={StaticResource InverseBoolToVisibility}}"/>
+			<Button Content="Сохранить изменения" Command="{Binding SaveChangesCommand}"
+            IsEnabled="{Binding HasChanges}"
+            Classes="Primary"
+            IsVisible="{Binding IsAddingMode, Converter={StaticResource InverseBoolToVisibility}}"/>
 		</StackPanel>
 
 		<!-- Пагинация и слайдер -->

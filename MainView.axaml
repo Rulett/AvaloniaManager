@@ -71,7 +71,7 @@
 									<TextBlock Classes="Headline6" Text="Avalonia Manager" HorizontalAlignment="Center" />
 								</StackPanel>
 							</controls:ColorZone>
-							<ListBox Classes="NoScroll" Name="DrawerList" SelectedIndex="0">
+							<ListBox Classes="NoScroll" Name="DrawerList" >
 								<ListBox.Styles>
 									<Style Selector="ListBoxItem">
 										<Setter Property="Height" Value="48" />
@@ -114,7 +114,7 @@
 									<MenuItem.Header>
 										<avalonia:MaterialIcon Kind="DotsVertical" Width="24" Height="24"/>
 									</MenuItem.Header>
-									<MenuItem Header="About">
+									<MenuItem Header="About" Command="{Binding ShowAboutCommand}">
 										<MenuItem.Icon>
 											<avalonia:MaterialIcon Kind="Information" Width="24" Height="24"/>
 										</MenuItem.Icon>
@@ -126,7 +126,7 @@
 
 					<ScrollViewer Name="mainScroller" DockPanel.Dock="Top">
 						<Carousel Name="PageCarousel" HorizontalAlignment="Stretch" 
-								  SelectedIndex="{Binding SelectedPageIndex, Mode=TwoWay}">
+								  SelectedIndex="{Binding SelectedPageIndex, Mode=OneWay}">
 							<Carousel.Styles>
 								<Style Selector="Carousel#PageCarousel:not(.no-transitions)">
 									<Setter Property="PageTransition">
@@ -138,7 +138,8 @@
 
 							<!-- Cтраницы -->
 							  <views:AuthorizationView IsVisible="{Binding ShowAuthItem}" DataContext="{Binding}"/>
-							  <views:EmployeesView IsVisible="{Binding IsAuthenticated}"/>
+							<views:EmployeesView DataContext="{Binding EmployeesViewModel}"
+                   IsVisible="{Binding #PageCarousel.DataContext.IsAuthenticated}"/>
 							  <views:ArticlesView IsVisible="{Binding IsAuthenticated}"/>
 							  <views:ReportsView IsVisible="{Binding IsAuthenticated}"/>
 						</Carousel>

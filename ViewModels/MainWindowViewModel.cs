@@ -1,12 +1,21 @@
-﻿using AvaloniaManager.Services;
+﻿using Avalonia.Threading;
+using AvaloniaManager.Services;
 using ReactiveUI;
+using System;
+using System.Diagnostics;
 using System.Reactive;
+using System.Reactive.Linq;
+using System.Threading.Tasks;
 
 namespace AvaloniaManager.ViewModels
 {
     public class MainWindowViewModel : ReactiveObject
     {
-        private bool _isAuthenticated=true;
+        public EmployeesViewModel EmployeesViewModel { get; } = new EmployeesViewModel();
+        //public ArticlesViewModel ArticlesViewModel { get; } = new ArticlesViewModel();
+        //public ReportsViewModel ReportsViewModel { get; } = new ReportsViewModel();
+
+        private bool _isAuthenticated;
         public bool IsAuthenticated
         {
             get => _isAuthenticated;
@@ -45,11 +54,8 @@ namespace AvaloniaManager.ViewModels
         public int SelectedPageIndex
         {
             get => _selectedPageIndex;
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _selectedPageIndex, value);
-                UpdatePageTitle();
-            }
+            set => this.RaiseAndSetIfChanged(ref _selectedPageIndex, value);
+            
         }
 
         private bool _isDrawerOpen = true;
@@ -60,10 +66,37 @@ namespace AvaloniaManager.ViewModels
         }
 
         public ReactiveCommand<Unit, Unit> LoginCommand { get; }
+        public ReactiveCommand<int, Unit> NavigateCommand { get; }
+        public ReactiveCommand<Unit, Unit> ShowAboutCommand { get; }
 
         public MainWindowViewModel()
         {
-            LoginCommand = ReactiveCommand.Create(() =>
+            NavigateCommand = ReactiveCommand.CreateFromTask<int>(async targetIndex =>
+            {
+                Debug.WriteLine($"Запрошен переход на вкладку {targetIndex}, текущая: {SelectedPageIndex}");
+
+                if (targetIndex == SelectedPageIndex)
+                {
+                    Debug.WriteLine("Переход на текущую вкладку - пропускаем");
+                    return;
+                }
+
+                Debug.WriteLine("Проверяем несохраненные изменения...");
+                bool canNavigate = await CheckForUnsavedChanges();
+                Debug.WriteLine($"Результат проверки: {canNavigate}");
+
+                if (!canNavigate)
+                {
+                    Debug.WriteLine("Переход отменен из-за несохраненных изменений");
+                    return;
+                }
+
+                Debug.WriteLine($"Переходим на вкладку {targetIndex}");
+                SelectedPageIndex = targetIndex;
+                UpdatePageTitle();
+            });
+
+            LoginCommand = ReactiveCommand.CreateFromTask(async () =>
             {
                 IsAuthenticated = Password == "admin";
                 LoginFailed = !IsAuthenticated;
@@ -73,7 +106,7 @@ namespace AvaloniaManager.ViewModels
                     NotificationManagerService.ShowSuccess("Авторизация прошла успешно!");
                     Password = "";
                     ShowAuthItem = false;
-                    SelectedPageIndex = 1; // Выбор страницы после ввода пароля
+                    await NavigateCommand.Execute(1); 
                 }
                 else
                 {
@@ -81,9 +114,53 @@ namespace AvaloniaManager.ViewModels
                 }
             });
 
+            ShowAboutCommand = ReactiveCommand.CreateFromTask(async () =>
+            {
+                await Task.Delay(100); 
+                NotificationManagerService.ShowInfo("Пока тут пусто");
+            });
+
             this.WhenAnyValue(x => x.SelectedPageIndex)
                 .Subscribe(new AnonymousObserver<int>(_ => UpdatePageTitle()));
         }
+
+        public async Task<bool> CheckForUnsavedChanges()
+        {
+            Debug.WriteLine($"CheckForUnsavedChanges() - текущая вкладка: {SelectedPageIndex}");
+            
+            switch (SelectedPageIndex)
+            {
+                case 1:
+                    Debug.WriteLine($"Проверяем изменения в EmployeesViewModel...EmployeesViewModel.HasChanges= {EmployeesViewModel.HasChanges}");
+                    if (EmployeesViewModel.HasUnsavedChanges)
+                    {
+                        Debug.WriteLine("Обнаружены несохраненные изменения, запрашиваем подтверждение...");
+                        return await EmployeesViewModel.ConfirmNavigation();
+                    }
+                    Debug.WriteLine("Нет несохраненных изменений");
+                    return true;
+                default:
+                    Debug.WriteLine("Для текущей вкладки проверка не требуется");
+                    return true;
+            }
+        }
+
+        public async Task<bool> CanCloseApplication()
+{
+    Debug.WriteLine("Проверка изменений перед закрытием приложения");
+    
+    // Проверяем все вкладки на наличие изменений
+    if (EmployeesViewModel.HasUnsavedChanges)
+    {
+        var result = await EmployeesViewModel.ShowConfirmationDialog(
+            "Несохраненные изменения",
+            "У вас есть несохраненные изменения. Закрыть приложение?");
+        
+        return result;
+    }
+    
+    return true;
+}
 
         private void UpdatePageTitle() 
         {
