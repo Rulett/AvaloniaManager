@@ -138,9 +138,10 @@
 
 							<!-- Cтраницы -->
 							  <views:AuthorizationView IsVisible="{Binding ShowAuthItem}" DataContext="{Binding}"/>
-							<views:EmployeesView DataContext="{Binding EmployeesViewModel}"
+							<views:EmployeesView DataContext ="{Binding EmployeesViewModel}"
                    IsVisible="{Binding #PageCarousel.DataContext.IsAuthenticated}"/>
-							  <views:ArticlesView IsVisible="{Binding IsAuthenticated}"/>
+							  <views:ArticlesView DataContext = "{Binding ArticlesViewModel}" 
+				   IsVisible="{Binding #PageCarousel.DataContext.IsAuthenticated}"/>
 							  <views:ReportsView IsVisible="{Binding IsAuthenticated}"/>
 						</Carousel>
 					</ScrollViewer>

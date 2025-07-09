@@ -9,6 +9,7 @@
         mc:Ignorable="d"
         WindowStartupLocation="CenterScreen"
         Width="1920" Height="1080" MinWidth="720"
+		WindowState="Maximized"
         Title="Avalonia Manager"
         Icon="/Assets/кчау.png"
         x:DataType="vm:MainWindowViewModel">

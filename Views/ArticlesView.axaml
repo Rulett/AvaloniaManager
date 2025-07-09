@@ -2,19 +2,68 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="AvaloniaManager.Views.ArticlesView">
-	<UserControl.Styles>
-		<Style Selector="TextBlock.Subheadline">
-			<Setter Property="Margin" Value="0, 16" />
-		</Style>
-		<Style Selector="TextBlock.Subheadline2">
-			<Setter Property="Margin" Value="0, 8" />
-		</Style>
-		<Style Selector="TextBlock.Content">
-			<Setter Property="Margin" Value="0, 4" />
-			<Setter Property="HorizontalAlignment" Value="Left" />
-		</Style>
-	</UserControl.Styles>
-	<TextBlock Text="Тут статьи будут" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+             xmlns:vm="clr-namespace:AvaloniaManager.ViewModels"
+             mc:Ignorable="d"
+             d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="AvaloniaManager.Views.ArticlesView"
+             x:DataType="vm:ArticlesViewModel">
+
+	<DockPanel Margin="16" LastChildFill="True">
+		<!-- Верхняя панель с заголовком и выбором даты -->
+		<Grid DockPanel.Dock="Top" Margin="0,0,0,10">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="Auto"/>
+			</Grid.ColumnDefinitions>
+
+			<!-- Заголовок слева (выравнивание по левому краю) -->
+			<TextBlock Grid.Column="0"
+                      FontSize="16"
+                      FontWeight="Bold"
+                      VerticalAlignment="Center"
+                      HorizontalAlignment="Left"
+                      Text="{Binding MonthYearHeader}"/>
+
+			<!-- Выбор даты справа (выравнивание по правому краю) -->
+			<StackPanel Grid.Column="1"
+                       Orientation="Horizontal"
+                       Spacing="5"
+                       VerticalAlignment="Center">
+				<TextBlock Text="Дата:"
+                          VerticalAlignment="Center"
+                          Margin="0,0,5,0"/>
+				<NumericUpDown Width="100"
+                             Minimum="1"
+                             Maximum="12"
+                             Value="{Binding SelectedMonth}"
+                             FormatString="00"
+                             Watermark="Месяц"/>
+				<NumericUpDown Width="100"
+                             Minimum="2000"
+                             Maximum="2100"
+                             Value="{Binding SelectedYear}"
+                             FormatString="0000"
+                             Watermark="Год"/>
+			</StackPanel>
+		</Grid>
+
+		<!-- Таблица статей -->
+		<DataGrid ItemsSource="{Binding Articles}"
+                 AutoGenerateColumns="False"
+                 HorizontalScrollBarVisibility="Visible">
+			<DataGrid.Columns>
+				<DataGridTextColumn Header="Название" Binding="{Binding ArticleName}" Width="*"/>
+				<DataGridTextColumn Header="Сотрудник" Binding="{Binding Employee.FullName}" Width="auto"/>
+				<DataGridTextColumn Header="Дата выпуска"
+                                  Binding="{Binding ReleaseDate, StringFormat='{}{0:dd.MM.yyyy}'}"
+                                  Width="auto"/>
+				<DataGridTextColumn Header="Сумма" Binding="{Binding Summa}" Width="auto"/>
+				<DataGridTextColumn Header="Бонус %" Binding="{Binding Bonus}" Width="auto"/>
+				<DataGridTextColumn Header="Итог" Binding="{Binding Itog}" Width="auto"/>
+				<DataGridTextColumn Header="СМИ" Binding="{Binding SMI}" Width="auto"/>
+				<DataGridCheckBoxColumn Header="Реклама" Binding="{Binding Reklama}" Width="auto"/>
+				<DataGridTextColumn Header="Тип контента" Binding="{Binding ContentType}" Width="auto"/>
+			</DataGrid.Columns>
+		</DataGrid>
+	</DockPanel>
 </UserControl>

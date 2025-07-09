@@ -12,10 +12,10 @@ namespace AvaloniaManager.ViewModels
     public class MainWindowViewModel : ReactiveObject
     {
         public EmployeesViewModel EmployeesViewModel { get; } = new EmployeesViewModel();
-        //public ArticlesViewModel ArticlesViewModel { get; } = new ArticlesViewModel();
+        public ArticlesViewModel ArticlesViewModel { get; } = new ArticlesViewModel();
         //public ReportsViewModel ReportsViewModel { get; } = new ReportsViewModel();
 
-        private bool _isAuthenticated;
+        private bool _isAuthenticated=true;
         public bool IsAuthenticated
         {
             get => _isAuthenticated;
