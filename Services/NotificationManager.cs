@@ -25,7 +25,7 @@ namespace AvaloniaManager.Services
 
         public static void ShowInfo(string message)
         {
-            PostSnackbar($"i {message}", TimeSpan.FromSeconds(4), "#1565C0"); // синий текст
+            PostSnackbar($"🛈 {message}", TimeSpan.FromSeconds(4), "#1565C0"); // синий текст
         }
 
         public static void ShowWarning(string message)

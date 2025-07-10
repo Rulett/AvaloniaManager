@@ -114,7 +114,7 @@
 									<MenuItem.Header>
 										<avalonia:MaterialIcon Kind="DotsVertical" Width="24" Height="24"/>
 									</MenuItem.Header>
-									<MenuItem Header="About" Command="{Binding ShowAboutCommand}">
+									<MenuItem Header="О приложении" Command="{Binding ShowAboutCommand}">
 										<MenuItem.Icon>
 											<avalonia:MaterialIcon Kind="Information" Width="24" Height="24"/>
 										</MenuItem.Icon>

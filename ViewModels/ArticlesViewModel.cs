@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reactive;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 
 namespace AvaloniaManager.ViewModels
@@ -18,6 +19,8 @@ namespace AvaloniaManager.ViewModels
         private ObservableCollection<Article> _articles = new();
         private int _selectedMonth = DateTime.Now.Month;
         private int _selectedYear = DateTime.Now.Year;
+        private int _pageSize = 10;
+        private int _currentPage = 1;
 
         public ObservableCollection<Article> Articles
         {
@@ -25,8 +28,47 @@ namespace AvaloniaManager.ViewModels
             set => this.RaiseAndSetIfChanged(ref _articles, value);
         }
 
+        public int PageSize
+        {
+            get => _pageSize;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _pageSize, value);
+            }
+        }
+
+        public int CurrentPage
+        {
+            get => _currentPage;
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _currentPage, value);
+            }
+        }
+
+        public bool HasNextPage
+        {
+            get
+            {
+                try
+                {
+                    using var db = new AppDbContext();
+                    var startDate = new DateTime(SelectedYear, SelectedMonth, 1);
+                    var endDate = startDate.AddMonths(1).AddDays(-1);
+                    var totalCount = db.Articles.Count(a => a.ReleaseDate >= startDate && a.ReleaseDate <= endDate);
+                    return totalCount > CurrentPage * PageSize;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
+        public bool HasPreviousPage => CurrentPage > 1;
+
         public string MonthYearHeader =>
-        $"Статьи за {CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(SelectedMonth)} {SelectedYear}";
+            $"Статьи за {CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(SelectedMonth)} {SelectedYear}";
 
         public int SelectedMonth
         {
@@ -35,6 +77,7 @@ namespace AvaloniaManager.ViewModels
             {
                 this.RaiseAndSetIfChanged(ref _selectedMonth, value);
                 this.RaisePropertyChanged(nameof(MonthYearHeader));
+                CurrentPage = 1; // Сброс на первую страницу при изменении месяца
                 LoadArticles();
             }
         }
@@ -46,15 +89,47 @@ namespace AvaloniaManager.ViewModels
             {
                 this.RaiseAndSetIfChanged(ref _selectedYear, value);
                 this.RaisePropertyChanged(nameof(MonthYearHeader));
+                CurrentPage = 1; // Сброс на первую страницу при изменении года
                 LoadArticles();
             }
         }
 
-        public DateTime SelectedDate => new DateTime(SelectedYear, SelectedMonth, 1);
+        public ReactiveCommand<Unit, Unit> NextPageCommand { get; }
+        public ReactiveCommand<Unit, Unit> PreviousPageCommand { get; }
 
         public ArticlesViewModel()
         {
+            NextPageCommand = ReactiveCommand.CreateFromTask(NextPage);
+            PreviousPageCommand = ReactiveCommand.CreateFromTask(PreviousPage);
+
+            // Подписка на изменения
+            this.WhenAnyValue(
+                x => x.CurrentPage,
+                x => x.PageSize)
+                .Throttle(TimeSpan.FromMilliseconds(300))
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(_ => LoadArticles().ConfigureAwait(false));
+
+            // Первоначальная загрузка
             LoadArticles();
+        }
+
+        private async Task NextPage()
+        {
+            if (HasNextPage)
+            {
+                CurrentPage++;
+                await LoadArticles();
+            }
+        }
+
+        private async Task PreviousPage()
+        {
+            if (HasPreviousPage)
+            {
+                CurrentPage--;
+                await LoadArticles();
+            }
         }
 
         private async Task LoadArticles()
@@ -70,9 +145,13 @@ namespace AvaloniaManager.ViewModels
                     .Include(a => a.Employee)
                     .Where(a => a.ReleaseDate >= startDate && a.ReleaseDate <= endDate)
                     .OrderBy(a => a.ReleaseDate)
+                    .Skip((CurrentPage - 1) * PageSize)
+                    .Take(PageSize)
                     .ToListAsync();
 
                 Articles = new ObservableCollection<Article>(articles);
+                this.RaisePropertyChanged(nameof(HasNextPage));
+                this.RaisePropertyChanged(nameof(HasPreviousPage));
             }
             catch (Exception ex)
             {

@@ -29,7 +29,7 @@ namespace AvaloniaManager.ViewModels
         private Employee _selectedEmployee;
         private string _searchText;
         private int _currentPage = 1;
-        private int _pageSize = 15;
+        private int _pageSize = 10;
         
         public int PageSize
         {
@@ -100,7 +100,7 @@ namespace AvaloniaManager.ViewModels
             get => _isAddingMode;
             set => this.RaiseAndSetIfChanged(ref _isAddingMode, value);
         }
-
+        
         public ReactiveCommand<Employee, Unit> DeleteCommand { get; }
         public ReactiveCommand<Unit, Unit> RefreshCommand { get; }
         public ReactiveCommand<Unit, Unit> AddEmployeeCommand { get; }
@@ -137,7 +137,7 @@ namespace AvaloniaManager.ViewModels
                 .Throttle(TimeSpan.FromMilliseconds(300))
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(_ => LoadEmployees().ConfigureAwait(false));
-
+            
             // Отслеживание изменений в таблице
             this.WhenAnyValue(x => x.Employees)
         .Subscribe(employees =>

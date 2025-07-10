@@ -1,22 +1,17 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:AvaloniaManager.ViewModels"
-             mc:Ignorable="d"
-             d:DesignWidth="800" d:DesignHeight="450"
              x:Class="AvaloniaManager.Views.ArticlesView"
              x:DataType="vm:ArticlesViewModel">
 
-	<DockPanel Margin="16" LastChildFill="True">
+	<StackPanel Margin="16" Spacing="16">
 		<!-- Верхняя панель с заголовком и выбором даты -->
-		<Grid DockPanel.Dock="Top" Margin="0,0,0,10">
+		<Grid Margin="0,0,0,10">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="*"/>
 				<ColumnDefinition Width="Auto"/>
 			</Grid.ColumnDefinitions>
 
-			<!-- Заголовок слева (выравнивание по левому краю) -->
 			<TextBlock Grid.Column="0"
                       FontSize="16"
                       FontWeight="Bold"
@@ -24,7 +19,6 @@
                       HorizontalAlignment="Left"
                       Text="{Binding MonthYearHeader}"/>
 
-			<!-- Выбор даты справа (выравнивание по правому краю) -->
 			<StackPanel Grid.Column="1"
                        Orientation="Horizontal"
                        Spacing="5"
@@ -32,27 +26,28 @@
 				<TextBlock Text="Дата:"
                           VerticalAlignment="Center"
                           Margin="0,0,5,0"/>
-				<NumericUpDown Width="100"
+				<NumericUpDown Width="110"
                              Minimum="1"
                              Maximum="12"
                              Value="{Binding SelectedMonth}"
                              FormatString="00"
                              Watermark="Месяц"/>
-				<NumericUpDown Width="100"
+				<NumericUpDown Width="110"
                              Minimum="2000"
-                             Maximum="2100"
+                             Maximum="9999"
                              Value="{Binding SelectedYear}"
                              FormatString="0000"
                              Watermark="Год"/>
 			</StackPanel>
 		</Grid>
 
-		<!-- Таблица статей -->
+		<!-- Таблица статей (автоматическая высота) -->
 		<DataGrid ItemsSource="{Binding Articles}"
                  AutoGenerateColumns="False"
-                 HorizontalScrollBarVisibility="Visible">
+                 HorizontalScrollBarVisibility="Visible"
+                 VerticalAlignment="Top">
 			<DataGrid.Columns>
-				<DataGridTextColumn Header="Название" Binding="{Binding ArticleName}" Width="*"/>
+				<DataGridTextColumn Header="Название" Binding="{Binding ArticleName}" Width="auto"/>
 				<DataGridTextColumn Header="Сотрудник" Binding="{Binding Employee.FullName}" Width="auto"/>
 				<DataGridTextColumn Header="Дата выпуска"
                                   Binding="{Binding ReleaseDate, StringFormat='{}{0:dd.MM.yyyy}'}"
@@ -65,5 +60,48 @@
 				<DataGridTextColumn Header="Тип контента" Binding="{Binding ContentType}" Width="auto"/>
 			</DataGrid.Columns>
 		</DataGrid>
-	</DockPanel>
+
+		<!-- Панель пагинации и слайдер -->
+		<Grid Margin="0,10,0,0">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="Auto"/>
+				<ColumnDefinition Width="*"/>
+			</Grid.ColumnDefinitions>
+
+			<!-- Кнопки пагинации по центру -->
+			<StackPanel Grid.Column="1"
+                       Orientation="Horizontal"
+                       Spacing="16"
+                       HorizontalAlignment="Center">
+				<Button Content="← Назад"
+                       Command="{Binding PreviousPageCommand}"
+                       IsEnabled="{Binding HasPreviousPage}"/>
+				<TextBlock Text="{Binding CurrentPage, StringFormat='Страница {0}'}"
+                          VerticalAlignment="Center"/>
+				<Button Content="Вперед →"
+                       Command="{Binding NextPageCommand}"
+                       IsEnabled="{Binding HasNextPage}"/>
+			</StackPanel>
+
+			<!-- Слайдер справа -->
+			<StackPanel Grid.Column="2"
+                       Orientation="Horizontal"
+                       HorizontalAlignment="Right"
+                       Spacing="10">
+				<TextBlock Text="Статей на странице:" VerticalAlignment="Center"/>
+				<Slider Width="150"
+                       Minimum="5"
+                       Maximum="50"
+                       Value="{Binding PageSize, Mode=TwoWay}"
+                       IsSnapToTickEnabled="True"
+                       Classes="Discrete"
+                       TickFrequency="5"
+                       VerticalAlignment="Center"/>
+				<TextBlock Text="{Binding PageSize}"
+                          VerticalAlignment="Center"
+                          Margin="5,0,0,0"/>
+			</StackPanel>
+		</Grid>
+	</StackPanel>
 </UserControl>
