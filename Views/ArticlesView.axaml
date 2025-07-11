@@ -1,8 +1,48 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:controls="clr-namespace:Material.Styles.Controls;assembly=Material.Styles"
+             xmlns:material="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
              xmlns:vm="clr-namespace:AvaloniaManager.ViewModels"
+             xmlns:local="clr-namespace:AvaloniaManager.Models"
+             xmlns:converters="clr-namespace:AvaloniaManager.Converters"
+             xmlns:sys="clr-namespace:System;assembly=netstandard"
+             xmlns:col="clr-namespace:System.Collections;assembly=System.Runtime"
+             mc:Ignorable="d"
+             d:DesignWidth="800" d:DesignHeight="450"
              x:Class="AvaloniaManager.Views.ArticlesView"
-             x:DataType="vm:ArticlesViewModel">
+             x:DataType="vm:ArticlesViewModel"
+             Name="Root">
+
+	<UserControl.Resources>
+		<ResourceDictionary>
+			<converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+			<converters:BoolToVisibilityConverter x:Key="InverseBoolToVisibility" IsInverse="True"/>
+
+			<col:ArrayList x:Key="SMIOptions">
+				<sys:String>ВМ</sys:String>
+				<sys:String>МК</sys:String>
+				<sys:String>Радио-Минск</sys:String>
+				<sys:String>Качели</sys:String>
+				<sys:String>minsknews.by</sys:String>
+			</col:ArrayList>
+
+			<col:ArrayList x:Key="ContentTypes">
+				<sys:String>Текстовый материал</sys:String>
+				<sys:String>Видеоматериал</sys:String>
+				<sys:String>Фотоматериал</sys:String>
+				<sys:String>Аудиоматериал</sys:String>
+			</col:ArrayList>
+		</ResourceDictionary>
+	</UserControl.Resources>
+
+	<UserControl.Styles>
+		<Style Selector="Button.Danger">
+			<Setter Property="Background" Value="#FF5252"/>
+			<Setter Property="Foreground" Value="White"/>
+		</Style>
+	</UserControl.Styles>
 
 	<StackPanel Margin="16" Spacing="16">
 		<!-- Верхняя панель с заголовком и выбором даты -->
@@ -41,39 +81,101 @@
 			</StackPanel>
 		</Grid>
 
-		<!-- Таблица статей (автоматическая высота) -->
+		<!-- Основная таблица статей -->
 		<DataGrid ItemsSource="{Binding Articles}"
+                 SelectedItem="{Binding SelectedArticle}"
                  AutoGenerateColumns="False"
+                 IsReadOnly="False"
                  HorizontalScrollBarVisibility="Visible"
-                 VerticalAlignment="Top">
+                 Name="ArticlesDataGrid">
+
 			<DataGrid.Columns>
-				<DataGridTextColumn Header="Название" Binding="{Binding ArticleName}" Width="auto"/>
-				<DataGridTextColumn Header="Сотрудник" Binding="{Binding Employee.FullName}" Width="auto"/>
-				<DataGridTextColumn Header="Дата выпуска"
-                                  Binding="{Binding ReleaseDate, StringFormat='{}{0:dd.MM.yyyy}'}"
+				<DataGridTextColumn Header="ID" Binding="{Binding Id}" IsVisible="False"/>
+
+				<DataGridTextColumn Header="Название"
+                                  Binding="{Binding ArticleName, Mode=TwoWay}"
                                   Width="auto"/>
-				<DataGridTextColumn Header="Сумма" Binding="{Binding Summa}" Width="auto"/>
-				<DataGridTextColumn Header="Бонус %" Binding="{Binding Bonus}" Width="auto"/>
-				<DataGridTextColumn Header="Итог" Binding="{Binding Itog}" Width="auto"/>
-				<DataGridTextColumn Header="СМИ" Binding="{Binding SMI}" Width="auto"/>
-				<DataGridCheckBoxColumn Header="Реклама" Binding="{Binding Reklama}" Width="auto"/>
-				<DataGridTextColumn Header="Тип контента" Binding="{Binding ContentType}" Width="auto"/>
+
+				<DataGridTemplateColumn Header="Сотрудник" Width="auto">
+					<DataGridTemplateColumn.CellTemplate>
+						<DataTemplate>
+							<ComboBox
+								ItemsSource="{Binding DataContext.Employees, ElementName=Root}"
+								SelectedItem="{Binding Employee, Mode=TwoWay}"
+								IsTextSearchEnabled="True"
+								Theme="{StaticResource MaterialFilledComboBox}">
+								<ComboBox.ItemTemplate>
+									<DataTemplate>
+										<TextBlock Text="{Binding FullName}"/>
+									</DataTemplate>
+								</ComboBox.ItemTemplate>
+							</ComboBox>
+						</DataTemplate>
+					</DataGridTemplateColumn.CellTemplate>
+				</DataGridTemplateColumn>
+
+				<DataGridTemplateColumn Header="СМИ" Width="auto">
+					<DataGridTemplateColumn.CellTemplate>
+						<DataTemplate>
+							<ComboBox ItemsSource="{StaticResource SMIOptions}"
+									  Theme="{StaticResource MaterialFilledComboBox}"
+                                      SelectedItem="{Binding SMI, Mode=TwoWay}"/>
+						</DataTemplate>
+					</DataGridTemplateColumn.CellTemplate>
+				</DataGridTemplateColumn>
+
+				<DataGridTextColumn Header="Дата публикации"
+                                   Binding="{Binding ReleaseDate, StringFormat='{}{0:dd.MM.yyyy}', Mode=TwoWay}"
+                                   Width="auto"/>
+
+				<DataGridTextColumn Header="Номер издания"
+                                  Binding="{Binding PubicationId, Mode=TwoWay}"
+                                  Width="auto"/>
+
+				<DataGridTextColumn Header="Номер полосы"
+                                  Binding="{Binding NewspaperLine, Mode=TwoWay}"
+                                  Width="auto"/>
+
+				<DataGridTextColumn Header="Сумма"
+                                  Binding="{Binding Summa, Mode=TwoWay}"
+                                  Width="auto"/>
+
+				<DataGridTextColumn Header="Бонус %"
+                                  Binding="{Binding Bonus, Mode=TwoWay}"
+                                  Width="auto"/>
+
+				<DataGridTextColumn Header="Итог"
+                                  Binding="{Binding Itog, Mode=OneWay}"
+                                  Width="auto"
+                                  IsReadOnly="True"/>
+
+				<DataGridCheckBoxColumn Header="Реклама"
+                                      Binding="{Binding Reklama, Mode=TwoWay}"
+                                      Width="auto"/>
+
+				<DataGridTemplateColumn Header="Тип контента" Width="auto">
+					<DataGridTemplateColumn.CellTemplate>
+						<DataTemplate>
+							<ComboBox Theme="{StaticResource MaterialFilledComboBox}"
+									  ItemsSource="{StaticResource ContentTypes}"
+                                      SelectedItem="{Binding ContentType, Mode=TwoWay}"/>
+						</DataTemplate>
+					</DataGridTemplateColumn.CellTemplate>
+				</DataGridTemplateColumn>
 			</DataGrid.Columns>
 		</DataGrid>
 
-		<!-- Панель пагинации и слайдер -->
-		<Grid Margin="0,10,0,0">
+
+		<!-- Пагинация -->
+		<Grid>
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="*"/>
 				<ColumnDefinition Width="Auto"/>
 				<ColumnDefinition Width="*"/>
 			</Grid.ColumnDefinitions>
 
-			<!-- Кнопки пагинации по центру -->
-			<StackPanel Grid.Column="1"
-                       Orientation="Horizontal"
-                       Spacing="16"
-                       HorizontalAlignment="Center">
+			<!-- Кнопки пагинации -->
+			<StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16">
 				<Button Content="← Назад"
                        Command="{Binding PreviousPageCommand}"
                        IsEnabled="{Binding HasPreviousPage}"/>
@@ -84,11 +186,8 @@
                        IsEnabled="{Binding HasNextPage}"/>
 			</StackPanel>
 
-			<!-- Слайдер справа -->
-			<StackPanel Grid.Column="2"
-                       Orientation="Horizontal"
-                       HorizontalAlignment="Right"
-                       Spacing="10">
+			<!-- Слайдер -->
+			<StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
 				<TextBlock Text="Статей на странице:" VerticalAlignment="Center"/>
 				<Slider Width="150"
                        Minimum="5"

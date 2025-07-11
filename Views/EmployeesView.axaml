@@ -17,7 +17,6 @@
 
 	<UserControl.Resources>
 		<ResourceDictionary>
-			<converters:ElementIndexConverter x:Key="IndexConverter"/>
 			<converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
 			<converters:BoolToVisibilityConverter x:Key="InverseBoolToVisibility" IsInverse="True"/>
 

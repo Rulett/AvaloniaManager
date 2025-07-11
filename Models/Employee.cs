@@ -132,6 +132,19 @@ namespace AvaloniaManager.Models
                    NickName != original.NickName ||
                    Shtatni != original.Shtatni;
         }
+
+        public override string ToString() => FullName;
+
+        public override bool Equals(object obj)
+        {
+            return obj is Employee employee &&
+                   Id == employee.Id;
+        }
+
+        public override int GetHashCode()
+        {
+            return Id.GetHashCode();
+        }
     }
 
     public enum ContractType
