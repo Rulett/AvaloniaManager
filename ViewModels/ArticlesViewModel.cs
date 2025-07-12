@@ -1,6 +1,12 @@
-﻿using Avalonia.Controls;
+﻿using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Layout;
+using Avalonia.Media;
 using AvaloniaManager.Data;
 using AvaloniaManager.Models;
+using AvaloniaManager.Services;
+using DialogHostAvalonia;
+using Material.Icons.Avalonia;
 using Microsoft.EntityFrameworkCore;
 using ReactiveUI;
 using System;
@@ -11,6 +17,7 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using GalaSoft.MvvmLight.Command;
 
 namespace AvaloniaManager.ViewModels
 {
@@ -106,11 +113,13 @@ namespace AvaloniaManager.ViewModels
 
         public ReactiveCommand<Unit, Unit> NextPageCommand { get; }
         public ReactiveCommand<Unit, Unit> PreviousPageCommand { get; }
+        public ReactiveCommand<Article, Unit> DeleteCommand { get; }
 
         public ArticlesViewModel()
         {
             NextPageCommand = ReactiveCommand.CreateFromTask(NextPage);
             PreviousPageCommand = ReactiveCommand.CreateFromTask(PreviousPage);
+            DeleteCommand = ReactiveCommand.CreateFromTask<Article>(DeleteArticle);
 
             this.WhenAnyValue(
                 x => x.CurrentPage,
@@ -187,6 +196,39 @@ namespace AvaloniaManager.ViewModels
             catch (Exception ex)
             {
                 Debug.WriteLine($"Ошибка загрузки статей: {ex.Message}");
+            }
+        }
+
+        private async Task DeleteArticle(Article article)
+        {
+            try
+            {
+                var confirm = await DialogService.ShowConfirmationDialog(
+                    "Удаление статьи",
+                    $"Вы уверены, что хотите удалить статью {article.ArticleName}?");
+
+                if (!confirm) return;
+
+                await using var db = new AppDbContext();
+
+                var articleToDelete = await db.Articles.FindAsync(article.Id);
+                if (articleToDelete == null)
+                {
+                    await DialogService.ShowErrorNotification("Статья не найдена в базе данных");
+                    return;
+                }
+
+                db.Articles.Remove(articleToDelete);
+                await db.SaveChangesAsync();
+                Articles.Remove(article);
+                await DialogService.ShowSuccessNotification($"Статья {article.ArticleName} успешно удалена");
+
+
+                await LoadArticles();
+            }
+            catch (Exception ex)
+            {
+                await DialogService.ShowErrorNotification($"Ошибка при удалении: {ex.Message}");
             }
         }
     }

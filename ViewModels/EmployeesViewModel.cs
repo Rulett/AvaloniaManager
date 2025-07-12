@@ -195,7 +195,7 @@ namespace AvaloniaManager.ViewModels
             }
             catch (Exception ex)
             {
-                await ShowErrorDialog($"Ошибка загрузки: {ex.Message}");
+                await DialogService.ShowErrorNotification($"Ошибка загрузки: {ex.Message}");
             }
         }
 
@@ -224,7 +224,7 @@ namespace AvaloniaManager.ViewModels
             // Проверка на пустые строки
             if (NewEmployees.Count == 0)
             {
-                await ShowErrorDialog("Нет данных для сохранения. Добавьте хотя бы одного сотрудника.");
+                await DialogService.ShowErrorNotification("Нет данных для сохранения. Добавьте хотя бы одного сотрудника.");
                 return;
             }
 
@@ -253,7 +253,7 @@ namespace AvaloniaManager.ViewModels
 
             if (errors.Any())
             {
-                await ShowErrorDialog(string.Join("\n", errors.Distinct()));
+                await DialogService.ShowErrorNotification(string.Join("\n", errors.Distinct()));
                 return;
             }
 
@@ -263,26 +263,14 @@ namespace AvaloniaManager.ViewModels
                 db.Employees.AddRange(NewEmployees);
                 await db.SaveChangesAsync();
 
-                await ShowSuccessDialog("Данные успешно добавлены");
+                await DialogService.ShowSuccessNotification("Данные успешно добавлены");
                 IsAddingMode = false;
                 await LoadEmployees();
             }
             catch (Exception ex)
             {
-                await ShowErrorDialog($"Ошибка сохранения: {ex.Message}");
+                await DialogService.ShowErrorNotification($"Ошибка сохранения: {ex.Message}");
             }
-        }
-
-        private async Task ShowSuccessDialog(string message)
-        {
-            NotificationManagerService.ShowSuccess(message);
-            await Task.CompletedTask;
-        }
-
-        private async Task ShowErrorDialog(string message)
-        {
-            NotificationManagerService.ShowError(message);
-            await Task.CompletedTask;
         }
 
         private void ResetAdding()
@@ -292,115 +280,54 @@ namespace AvaloniaManager.ViewModels
 
         private async Task DeleteEmployee(Employee employee)
         {
-         try
+            try
             {
-                 // Запрос подтверждения
-                 var confirm = await ShowConfirmationDialog(
-                     "Удаление сотрудника", 
-                     $"Вы уверены, что хотите удалить сотрудника {employee.FullName}?\n");
-        
-                    if (!confirm) return;
+                // Запрос подтверждения
+                var confirm = await DialogService.ShowConfirmationDialog(
+                    "Удаление сотрудника",
+                    $"Вы уверены, что хотите удалить сотрудника {employee.FullName}?\n");
 
-                    await using var db = new AppDbContext();
-        
-                    // Проверка на связанные с сотрудником статьи с подтверждением
-                    var hasArticles = await db.Articles.AnyAsync(a => a.EmployeeId == employee.Id);
-                    if (hasArticles)
-                    {
-                        var articlesConfirm = await ShowConfirmationDialog(
-                            "Предупреждение", 
-                         "У этого сотрудника есть статьи, которые будут удалены. Продолжить?");
-            
-                     if (!articlesConfirm) return;
-                    }
+                if (!confirm) return;
+
+                await using var db = new AppDbContext();
+
+                // Получаем свежую версию сотрудника из БД
+                var employeeToDelete = await db.Employees
+                    .Include(e => e.Articles) 
+                    .FirstOrDefaultAsync(e => e.Id == employee.Id);
+
+                if (employeeToDelete == null)
+                {
+                    await DialogService.ShowErrorNotification("Сотрудник уже был удален");
+                    Employees.Remove(employee);
+                    return;
+                }
+
+                // Проверка на связанные статьи с подтверждением
+                if (employeeToDelete.Articles?.Any() == true)
+                {
+                    var articlesConfirm = await DialogService.ShowConfirmationDialog(
+                        "Предупреждение",
+                        $"У этого сотрудника есть {employeeToDelete.Articles.Count} статей. " +
+                        "Все они будут удалены. Продолжить?");
+
+                    if (!articlesConfirm) return;
+                }
 
                 // Удаление сотрудника
-                 db.Employees.Remove(employee);
-                 await db.SaveChangesAsync();
+                db.Employees.Remove(employeeToDelete);
+                await db.SaveChangesAsync();
 
-                 await ShowSuccessDialog($"Сотрудник {employee.FullName} успешно удален");
-                 await LoadEmployees();
+                Employees.Remove(employee);
+
+                await DialogService.ShowSuccessNotification($"Сотрудник {employee.FullName} успешно удален");
+
+                await LoadEmployees();
             }
             catch (Exception ex)
-                 {
-                    await ShowErrorDialog($"Ошибка при удалении: {ex.Message}");
-                 }
-        }
-
-        public async Task<bool> ShowConfirmationDialog(string title, string message)
-        {
-            var content = new StackPanel
             {
-                Spacing = 16,
-                Margin = new Thickness(16),
-                Children =
-        {
-            new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                Spacing = 12,
-                Children =
-                {
-                    new MaterialIcon
-                    {
-                        Kind = Material.Icons.MaterialIconKind.InfoCircleOutline,
-                        Width = 32,
-                        Height = 32,
-                        Foreground = Brushes.DodgerBlue
-                    },
-                    new TextBlock
-                    {
-                        Text = title,
-                        FontWeight = FontWeight.Bold,
-                        FontSize = 18,
-                        VerticalAlignment = VerticalAlignment.Center
-                    }
-                }
-            },
-            new TextBlock
-            {
-                Text = message,
-                TextWrapping = TextWrapping.Wrap,
-                FontSize = 14,
-                Margin = new Thickness(44, 0, 0, 0)
+                await DialogService.ShowErrorNotification($"Ошибка при удалении: {ex.Message}");
             }
-        }
-            };
-
-            var buttons = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Right,
-                Spacing = 8,
-                Margin = new Thickness(0, 16, 0, 0),
-                Children =
-        {
-            new Button
-            {
-                Content = "Да",
-                Classes = { "Primary" },
-                Width = 100,
-                Command = new RelayCommand(() => DialogHost.Close("MainDialogHost", true)),
-            },
-            new Button
-            {
-                Content = "Нет",
-                Classes = { "Outlined" },
-                Width = 100,
-                Command = new RelayCommand(() => DialogHost.Close("MainDialogHost", false)),
-            }
-        }
-            };
-
-            var mainContent = new StackPanel
-            {
-                Spacing = 0,
-                Children = { content, buttons }
-            };
-
-            // Показ диалога
-            var result = await DialogHost.Show(mainContent, "MainDialogHost");
-            return result is bool b && b;
         }
 
         private async Task SaveChanges()
@@ -446,11 +373,11 @@ namespace AvaloniaManager.ViewModels
                 }
 
                 HasChanges = false;
-                await ShowSuccessDialog("Изменения успешно сохранены");
+                await DialogService.ShowSuccessNotification("Изменения успешно сохранены");
             }
             catch (Exception ex)
             {
-                await ShowErrorDialog($"Ошибка сохранения: {ex.Message}");
+                await DialogService.ShowErrorNotification($"Ошибка сохранения: {ex.Message}");
             }
         }
 
@@ -462,7 +389,7 @@ namespace AvaloniaManager.ViewModels
 
             if (!HasChanges) return true;
 
-            var result = await ShowConfirmationDialog(
+            var result = await DialogService.ShowConfirmationDialog(
                 "Несохраненные изменения",
                 "У вас есть несохраненные изменения. Хотите сохранить перед переходом?"
                 );
@@ -476,7 +403,7 @@ namespace AvaloniaManager.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    await ShowErrorDialog($"Ошибка сохранения: {ex.Message}");
+                    await DialogService.ShowErrorNotification($"Ошибка сохранения: {ex.Message}");
                     return false;
                 }
             }
@@ -545,14 +472,13 @@ namespace AvaloniaManager.ViewModels
             HasChanges = false;
             Debug.WriteLine($"DiscardChanges: Все изменения отменены, HasChanges = {HasChanges}");
 
-            await ShowSuccessDialog("Изменения отменены");
+            await DialogService.ShowSuccessNotification("Изменения отменены");
         }
 
         private async Task NextPage()
         {   
             if (!HasNextPage)
             {
-                await ShowErrorDialog("Это последняя страница");
                 return;
             }
 
@@ -569,7 +495,6 @@ namespace AvaloniaManager.ViewModels
         {
             if (!HasPreviousPage)
             {
-                await ShowErrorDialog("Это первая страница");
                 return;
             }
 

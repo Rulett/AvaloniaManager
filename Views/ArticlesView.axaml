@@ -162,6 +162,16 @@
 						</DataTemplate>
 					</DataGridTemplateColumn.CellTemplate>
 				</DataGridTemplateColumn>
+				<DataGridTemplateColumn Header="Действия" Width="Auto">
+					<DataGridTemplateColumn.CellTemplate>
+						<DataTemplate>
+							<Button Content="Удалить"
+									Command="{Binding Path=DataContext.DeleteCommand, ElementName=Root}"
+									CommandParameter="{Binding}"
+									Classes="Danger"/>
+						</DataTemplate>
+					</DataGridTemplateColumn.CellTemplate>
+				</DataGridTemplateColumn>
 			</DataGrid.Columns>
 		</DataGrid>
 

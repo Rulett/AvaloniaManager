@@ -152,7 +152,7 @@ namespace AvaloniaManager.ViewModels
     // Проверяем все вкладки на наличие изменений
     if (EmployeesViewModel.HasUnsavedChanges)
     {
-        var result = await EmployeesViewModel.ShowConfirmationDialog(
+        var result = await DialogService.ShowConfirmationDialog(
             "Несохраненные изменения",
             "У вас есть несохраненные изменения. Закрыть приложение?");
         
