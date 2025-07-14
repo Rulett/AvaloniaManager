@@ -46,6 +46,9 @@
 
 	<StackPanel Margin="16" Spacing="16">
 		<!-- Верхняя панель с заголовком и выбором даты -->
+		<Border IsVisible="{Binding IsAddingMode, Converter={StaticResource InverseBoolToVisibility}}">
+			<StackPanel Spacing="16">
+		
 		<Grid Margin="0,0,0,10">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="*"/>
@@ -145,9 +148,9 @@
                                   Width="auto"/>
 
 				<DataGridTextColumn Header="Итог"
-                                  Binding="{Binding Itog, Mode=OneWay}"
-                                  Width="auto"
-                                  IsReadOnly="True"/>
+                   Binding="{Binding Itog, Mode=OneWay}"
+                   Width="auto"
+                   IsReadOnly="True"/>
 
 				<DataGridCheckBoxColumn Header="Реклама"
                                       Binding="{Binding Reklama, Mode=TwoWay}"
@@ -174,6 +177,111 @@
 				</DataGridTemplateColumn>
 			</DataGrid.Columns>
 		</DataGrid>
+			</StackPanel>
+		</Border>
+		
+
+		<!-- Панель добавления новых статей -->
+		<Border Padding="10" CornerRadius="5"
+               IsVisible="{Binding IsAddingMode, Converter={StaticResource BoolToVisibility}}">
+			<StackPanel Spacing="10">
+				<TextBlock Text="Добавление новых статей" FontWeight="Bold" FontSize="16"/>
+
+				<!-- DataGrid для новых статей -->
+				<DataGrid ItemsSource="{Binding NewArticles}"
+                         AutoGenerateColumns="False"
+                         HorizontalScrollBarVisibility="Visible">
+
+					<DataGrid.Columns>
+						<DataGridTextColumn Header="Название" Binding="{Binding ArticleName}" Width="auto"/>
+
+						<DataGridTemplateColumn Header="Сотрудник" Width="auto">
+							<DataGridTemplateColumn.CellTemplate>
+								<DataTemplate>
+									<ComboBox
+								ItemsSource="{Binding DataContext.Employees, ElementName=Root}"
+								SelectedItem="{Binding Employee, Mode=TwoWay}"
+								IsTextSearchEnabled="True"
+								Theme="{StaticResource MaterialFilledComboBox}">
+										<ComboBox.ItemTemplate>
+											<DataTemplate>
+												<TextBlock Text="{Binding FullName}"/>
+											</DataTemplate>
+										</ComboBox.ItemTemplate>
+									</ComboBox>
+								</DataTemplate>
+							</DataGridTemplateColumn.CellTemplate>
+						</DataGridTemplateColumn>
+
+						<DataGridTemplateColumn Header="СМИ" Width="auto">
+							<DataGridTemplateColumn.CellTemplate>
+								<DataTemplate>
+									<ComboBox ItemsSource="{StaticResource SMIOptions}"
+											  Theme="{StaticResource MaterialFilledComboBox}"
+                                              SelectedItem="{Binding SMI}"/>
+								</DataTemplate>
+							</DataGridTemplateColumn.CellTemplate>
+						</DataGridTemplateColumn>
+
+						<DataGridTextColumn Header="Дата публикации"
+                                          Binding="{Binding ReleaseDate, StringFormat='{}{0:dd.MM.yyyy}'}"
+                                          Width="auto"/>
+
+						<DataGridTextColumn Header="Номер издания" Binding="{Binding PubicationId}" Width="auto"/>
+						<DataGridTextColumn Header="Номер полосы" Binding="{Binding NewspaperLine}" Width="auto"/>
+						<DataGridTextColumn Header="Сумма" Binding="{Binding Summa}" Width="auto"/>
+						<DataGridTextColumn Header="Бонус %" Binding="{Binding Bonus}" Width="auto"/>
+						<DataGridTextColumn Header="Итог"
+                   Binding="{Binding Itog, Mode=OneWay}"
+                   Width="auto"
+                   IsReadOnly="True"/>
+						<DataGridCheckBoxColumn Header="Реклама" Binding="{Binding Reklama}" Width="auto"/>
+
+						<DataGridTemplateColumn Header="Тип контента" Width="auto">
+							<DataGridTemplateColumn.CellTemplate>
+								<DataTemplate>
+									<ComboBox ItemsSource="{StaticResource ContentTypes}"
+											  Theme="{StaticResource MaterialFilledComboBox}"
+                                              SelectedItem="{Binding ContentType}"/>
+								</DataTemplate>
+							</DataGridTemplateColumn.CellTemplate>
+						</DataGridTemplateColumn>
+					</DataGrid.Columns>
+				</DataGrid>
+
+				<!-- Команды при добавлении -->
+				<Grid>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="*"/>
+					</Grid.ColumnDefinitions>
+
+					<!-- Кнопки слева -->
+					<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Left">
+						<Button Content="Добавить строку" Command="{Binding AddNewRowCommand}"/>
+						<Button Content="Сброс" Command="{Binding ResetAddingCommand}"/>
+					</StackPanel>
+
+					<!-- Кнопки справа -->
+					<StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+						<Button Content="Сохранить" Command="{Binding SaveArticlesCommand}" Classes="Primary"/>
+						<Button Content="Выход" Command="{Binding ExitCommand}" Classes="Outlined"/>
+					</StackPanel>
+				</Grid>
+			</StackPanel>
+		</Border>
+
+		<Border IsVisible="{Binding IsAddingMode, Converter={StaticResource InverseBoolToVisibility}}">
+			<StackPanel Spacing="16">
+		<!-- Кнопки управления -->
+		<StackPanel Orientation="Horizontal" Spacing="10">
+			<Button Content="Добавить статьи" Command="{Binding AddArticlesCommand}"
+                    IsVisible="{Binding IsAddingMode, Converter={StaticResource InverseBoolToVisibility}}"/>
+			<Button Content="Сохранить изменения" Command="{Binding SaveChangesCommand}"
+                    IsEnabled="{Binding HasChanges}"
+                    Classes="Primary"
+                    IsVisible="{Binding IsAddingMode, Converter={StaticResource InverseBoolToVisibility}}"/>
+		</StackPanel>
 
 
 		<!-- Пагинация -->
@@ -212,5 +320,7 @@
                           Margin="5,0,0,0"/>
 			</StackPanel>
 		</Grid>
+				</StackPanel >
+		</Border>
 	</StackPanel>
 </UserControl>

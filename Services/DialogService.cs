@@ -9,7 +9,7 @@ using DialogHostAvalonia;
 
 namespace AvaloniaManager.Services
 {
-    public class DialogService
+    public static class DialogService
     {
         public static async Task<bool> ShowConfirmationDialog(string title, string message)
         {

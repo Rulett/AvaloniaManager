@@ -54,7 +54,7 @@ namespace AvaloniaManager.Models
             set
             {
                 this.RaiseAndSetIfChanged(ref _summa, value);
-                this.RaisePropertyChanged(nameof(TotalWithBonus));
+                CalculateItog();
             }
         }
 
@@ -65,7 +65,7 @@ namespace AvaloniaManager.Models
             set
             {
                 this.RaiseAndSetIfChanged(ref _bonus, value);
-                this.RaisePropertyChanged(nameof(TotalWithBonus));
+                CalculateItog();
             }
         }
 
@@ -74,11 +74,12 @@ namespace AvaloniaManager.Models
         public decimal Itog
         {
             get => _itog;
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _itog, value);
-                this.RaisePropertyChanged(nameof(TotalWithBonus));
-            }
+            set => this.RaiseAndSetIfChanged(ref _itog, value);
+        }
+
+        public void CalculateItog()
+        {
+            Itog = Summa + (Summa * (Bonus ?? 0) / 100);
         }
 
         [Required(ErrorMessage = "СМИ обязательно")]
@@ -127,12 +128,15 @@ namespace AvaloniaManager.Models
         public Employee Employee
         {
             get => _employee;
-            set => this.RaiseAndSetIfChanged(ref _employee, value);
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _employee, value);
+                if (value != null)
+                {
+                    EmployeeId = value.Id;
+                }
+            }
         }
-
-        // Вычисляемое свойство
-        [NotMapped]
-        public decimal TotalWithBonus => Itog + (Bonus ?? 0);
 
         public Article Clone()
         {
@@ -176,7 +180,6 @@ namespace AvaloniaManager.Models
                      .Contains(SMI);
         }
 
-        // Метод валидации ContentType
         public bool IsValidContentType()
         {
             return Enum.GetNames(typeof(ArticleContentType))

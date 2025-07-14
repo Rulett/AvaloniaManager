@@ -1,15 +1,10 @@
-﻿using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Layout;
-using Avalonia.Media;
-using AvaloniaManager.Data;
+﻿using AvaloniaManager.Data;
 using AvaloniaManager.Models;
 using AvaloniaManager.Services;
-using DialogHostAvalonia;
-using Material.Icons.Avalonia;
 using Microsoft.EntityFrameworkCore;
 using ReactiveUI;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -17,7 +12,6 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using GalaSoft.MvvmLight.Command;
 
 namespace AvaloniaManager.ViewModels
 {
@@ -93,8 +87,11 @@ namespace AvaloniaManager.ViewModels
                 this.RaiseAndSetIfChanged(ref _selectedMonth, value);
                 this.RaisePropertyChanged(nameof(MonthYearHeader));
                 CurrentPage = 1;
-                LoadArticles();
-                LoadEmployees();
+                if (!IsAddingMode) 
+                {
+                    LoadArticles();
+                    LoadEmployees();
+                }
             }
         }
 
@@ -106,20 +103,69 @@ namespace AvaloniaManager.ViewModels
                 this.RaiseAndSetIfChanged(ref _selectedYear, value);
                 this.RaisePropertyChanged(nameof(MonthYearHeader));
                 CurrentPage = 1;
-                LoadArticles();
-                LoadEmployees();
+                if (!IsAddingMode)
+                {
+                    LoadArticles();
+                    LoadEmployees();
+                }
             }
         }
+
+        private ObservableCollection<Article> _newArticles = new();
+        public ObservableCollection<Article> NewArticles
+        {
+            get => _newArticles;
+            set => this.RaiseAndSetIfChanged(ref _newArticles, value);
+        }
+
+        private bool _isAddingMode;
+        public bool IsAddingMode
+        {
+            get => _isAddingMode;
+            set => this.RaiseAndSetIfChanged(ref _isAddingMode, value);
+        }
+
+        private bool _hasChanges;
+        public bool HasChanges
+        {
+            get => _hasChanges;
+            set => this.RaiseAndSetIfChanged(ref _hasChanges, value);
+        }
+
+        private Dictionary<Article, Article> _originalValues = new();
 
         public ReactiveCommand<Unit, Unit> NextPageCommand { get; }
         public ReactiveCommand<Unit, Unit> PreviousPageCommand { get; }
         public ReactiveCommand<Article, Unit> DeleteCommand { get; }
+        public ReactiveCommand<Unit, Unit> AddArticlesCommand { get; }
+        public ReactiveCommand<Unit, Unit> AddNewRowCommand { get; }
+        public ReactiveCommand<Unit, Unit> ResetAddingCommand { get; }
+        public ReactiveCommand<Unit, Unit> SaveArticlesCommand { get; }
+        public ReactiveCommand<Unit, Unit> ExitCommand { get; }
+        public ReactiveCommand<Unit, Unit> SaveChangesCommand { get; }
 
         public ArticlesViewModel()
         {
             NextPageCommand = ReactiveCommand.CreateFromTask(NextPage);
             PreviousPageCommand = ReactiveCommand.CreateFromTask(PreviousPage);
             DeleteCommand = ReactiveCommand.CreateFromTask<Article>(DeleteArticle);
+            AddArticlesCommand = ReactiveCommand.Create(StartAdding);
+            AddNewRowCommand = ReactiveCommand.Create(AddNewRow);
+            ResetAddingCommand = ReactiveCommand.Create(ResetAdding);
+            ExitCommand = ReactiveCommand.CreateFromTask(async () =>
+            {
+                IsAddingMode = false;
+                NewArticles.Clear();
+                await LoadEmployees();
+                await LoadArticles().ConfigureAwait(false);
+            });
+
+            SaveArticlesCommand = ReactiveCommand.CreateFromTask(async () =>
+            {
+                await SaveArticles();
+                LoadArticles().ConfigureAwait(false); 
+            });
+            SaveChangesCommand = ReactiveCommand.CreateFromTask(SaveChanges);
 
             this.WhenAnyValue(
                 x => x.CurrentPage,
@@ -174,9 +220,9 @@ namespace AvaloniaManager.ViewModels
                 var endDate = startDate.AddMonths(1).AddDays(-1);
 
                 var articles = await db.Articles
-                    .Include(a => a.Employee) 
+                    .Include(a => a.Employee)
                     .Where(a => a.ReleaseDate >= startDate && a.ReleaseDate <= endDate)
-                    .OrderBy(a => a.ReleaseDate)
+                    .OrderBy(a => a.ArticleName) 
                     .Skip((CurrentPage - 1) * PageSize)
                     .Take(PageSize)
                     .AsNoTracking()
@@ -185,7 +231,6 @@ namespace AvaloniaManager.ViewModels
                 foreach (var article in articles)
                 {
                     article.Itog = (decimal)(article.Summa + (article.Summa * article.Bonus / 100));
-
                     Debug.WriteLine($"Article: {article.ArticleName}, Employee: {article.Employee?.FullName ?? "null"}");
                 }
 
@@ -230,6 +275,184 @@ namespace AvaloniaManager.ViewModels
             {
                 await DialogService.ShowErrorNotification($"Ошибка при удалении: {ex.Message}");
             }
+        }
+
+        private async Task SaveArticles()
+        {
+            foreach (var article in NewArticles)
+            {
+                article.CalculateItog();
+            }
+
+            // Валидация
+            var errors = new List<string>();
+            for (int i = 0; i < NewArticles.Count; i++)
+            {
+                var article = NewArticles[i];
+
+                if (string.IsNullOrWhiteSpace(article.ArticleName))
+                    errors.Add($"Строка {i + 1}: Название статьи обязательно");
+                if (article.Employee == null)
+                    errors.Add($"Строка {i + 1}: Не выбран сотрудник");
+                if (string.IsNullOrWhiteSpace(article.SMI))
+                    errors.Add($"Строка {i + 1}: Не указано СМИ");
+                if (article.ReleaseDate == default)
+                    errors.Add($"Строка {i + 1}: Не указана дата публикации");
+                if (string.IsNullOrWhiteSpace(article.ContentType))
+                    errors.Add($"Строка {i + 1}: Не указан тип контента");
+                
+                if (article.Summa <= 0)
+                    errors.Add($"Строка {i + 1}: Сумма должна быть больше 0");
+            }
+
+            if (errors.Any())
+            {
+                await DialogService.ShowErrorNotification(string.Join("\n", errors));
+                return;
+            }
+
+            try
+            {
+                await using var db = new AppDbContext();
+
+                foreach (var article in NewArticles)
+                {
+                    if (article.Employee != null)
+                    {
+                        db.Entry(article.Employee).State = EntityState.Unchanged;
+                        article.EmployeeId = article.Employee.Id;
+                    }
+                }
+
+                db.Articles.AddRange(NewArticles);
+                await db.SaveChangesAsync();
+
+                await DialogService.ShowSuccessNotification("Статьи успешно добавлены");
+                IsAddingMode = false;
+                NewArticles.Clear();
+                await LoadArticles();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Exception: {ex.Message}");
+                await DialogService.ShowErrorNotification($"Ошибка: {ex.Message}");
+            }
+        }
+
+        private async Task SaveChanges()
+        {
+            try
+            {
+                await using var db = new AppDbContext();
+                foreach (var (article, original) in _originalValues)
+                {
+                    if (article.ArticleName != original.ArticleName ||
+                        article.Employee != original.Employee ||
+                        article.SMI != original.SMI ||
+                        article.ReleaseDate != original.ReleaseDate ||
+                        article.PubicationId != original.PubicationId ||
+                        article.NewspaperLine != original.NewspaperLine ||
+                        article.Summa != original.Summa ||
+                        article.Bonus != original.Bonus ||
+                        article.Reklama != original.Reklama ||
+                        article.ContentType != original.ContentType)
+                    {
+                        db.Entry(article).State = EntityState.Modified;
+                    }
+                }
+
+                await db.SaveChangesAsync();
+                _originalValues.Clear();
+
+                // Обновление значений
+                foreach (var article in Articles)
+                {
+                    _originalValues[article] = new Article
+                    {
+                        ArticleName = article.ArticleName,
+                        Employee = article.Employee,
+                        SMI = article.SMI,
+                        ReleaseDate = article.ReleaseDate,
+                        PubicationId = article.PubicationId,
+                        NewspaperLine = article.NewspaperLine,
+                        Summa = article.Summa,
+                        Bonus = article.Bonus,
+                        Reklama = article.Reklama,
+                        ContentType = article.ContentType
+                    };
+                }
+
+                HasChanges = false;
+                await DialogService.ShowSuccessNotification("Изменения сохранены");
+            }
+            catch (Exception ex)
+            {
+                await DialogService.ShowErrorNotification($"Ошибка сохранения: {ex.Message}");
+            }
+        }
+
+        private async Task<bool> ConfirmNavigation()
+        {
+            if (!HasChanges) return true;
+
+            var result = await DialogService.ShowConfirmationDialog(
+                "Несохраненные изменения",
+                "У вас есть несохраненные изменения. Хотите сохранить перед переходом?");
+
+            if (result)
+            {
+                await SaveChanges();
+            }
+            else
+            {
+                // Отмена изменения
+                foreach (var (article, original) in _originalValues)
+                {
+                    article.ArticleName = original.ArticleName;
+                    article.Employee = original.Employee;
+                    article.SMI = original.SMI;
+                    article.ReleaseDate = original.ReleaseDate;
+                    article.PubicationId = original.PubicationId;
+                    article.NewspaperLine = original.NewspaperLine;
+                    article.Summa = original.Summa;
+                    article.Bonus = original.Bonus;
+                    article.Reklama = original.Reklama;
+                    article.ContentType = original.ContentType;
+                }
+                HasChanges = false;
+            }
+
+            return true;
+        }
+
+        private async void StartAdding()
+        {
+            if (ConfirmNavigation().GetAwaiter().GetResult())
+            {
+                NewArticles.Clear();
+                await LoadEmployees(); 
+                IsAddingMode = true;
+            }
+        }
+
+        private void AddNewRow()
+        {
+            var newArticle = new Article
+            {
+                ReleaseDate = DateTime.Today,
+                Bonus = 0,
+                Summa = 0,
+                Reklama = false,
+                ContentType = "Текстовый материал", 
+                SMI = "МК" 
+            };
+            newArticle.CalculateItog();
+            NewArticles.Add(newArticle);
+        }
+
+        private void ResetAdding()
+        {
+            NewArticles.Clear();
         }
     }
 }

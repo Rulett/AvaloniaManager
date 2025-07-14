@@ -1,8 +1,4 @@
-﻿using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Layout;
-using AvaloniaManager.Data;
+﻿using AvaloniaManager.Data;
 using AvaloniaManager.Models;
 using AvaloniaManager.Services;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +11,6 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using DialogHostAvalonia;
-using Avalonia.Media;
-using GalaSoft.MvvmLight.Command;
-using Material.Icons.Avalonia;
 
 namespace AvaloniaManager.ViewModels
 {
@@ -228,26 +220,29 @@ namespace AvaloniaManager.ViewModels
                 return;
             }
 
-            // Валидация всех записей
+            // Валидация 
             var errors = new List<string>();
-            foreach (var employee in NewEmployees)
+            for (int i = 0; i < NewEmployees.Count; i++)
             {
+                var employee = NewEmployees[i];
+                int rowNumber = i + 1; 
+
                 // Проверка строковых полей
                 if (string.IsNullOrWhiteSpace(employee.SurName))
-                    errors.Add("Фамилия обязательна для заполнения");
+                    errors.Add($"Строка {rowNumber}: Фамилия обязательна для заполнения");
                 if (string.IsNullOrWhiteSpace(employee.Name))
-                    errors.Add("Имя обязательно для заполнения");
+                    errors.Add($"Строка {rowNumber}: Имя обязательно для заполнения");
                 if (string.IsNullOrWhiteSpace(employee.ContractName))
-                    errors.Add("Тип договора обязателен для заполнения");
+                    errors.Add($"Строка {rowNumber}: Тип договора обязателен для заполнения");
 
                 // Проверка числовых полей
-                if (employee.ContractNumber <= 0) 
-                    errors.Add("Номер договора обязателен для заполнения");
+                if (employee.ContractNumber <= 0)
+                    errors.Add($"Строка {rowNumber}: Номер договора должен быть положительным числом");
 
                 // Проверка дат
                 if (employee.ContractStart >= employee.ContractEnd)
                 {
-                    errors.Add("Дата окончания должна быть позже даты начала");
+                    errors.Add($"Строка {rowNumber}: Дата окончания должна быть позже даты начала");
                 }
             }
 
@@ -282,7 +277,6 @@ namespace AvaloniaManager.ViewModels
         {
             try
             {
-                // Запрос подтверждения
                 var confirm = await DialogService.ShowConfirmationDialog(
                     "Удаление сотрудника",
                     $"Вы уверены, что хотите удалить сотрудника {employee.FullName}?\n");
@@ -291,7 +285,6 @@ namespace AvaloniaManager.ViewModels
 
                 await using var db = new AppDbContext();
 
-                // Получаем свежую версию сотрудника из БД
                 var employeeToDelete = await db.Employees
                     .Include(e => e.Articles) 
                     .FirstOrDefaultAsync(e => e.Id == employee.Id);
@@ -314,12 +307,9 @@ namespace AvaloniaManager.ViewModels
                     if (!articlesConfirm) return;
                 }
 
-                // Удаление сотрудника
                 db.Employees.Remove(employeeToDelete);
                 await db.SaveChangesAsync();
-
                 Employees.Remove(employee);
-
                 await DialogService.ShowSuccessNotification($"Сотрудник {employee.FullName} успешно удален");
 
                 await LoadEmployees();
@@ -337,7 +327,7 @@ namespace AvaloniaManager.ViewModels
                 await using var db = new AppDbContext();
                 foreach (var (employee, original) in _originalValues)
                 {
-                    // Проверяем есть ли изменения
+                    // Проверяем изменения
                     if (employee.SurName != original.SurName ||
                         employee.Name != original.Name ||
                         employee.FatherName != original.FatherName ||
@@ -462,7 +452,7 @@ namespace AvaloniaManager.ViewModels
                 employee.Shtatni = original.Shtatni;
             }
 
-            // Полностью перезагружаем оригинальные значения
+            // релоад оригинальных значений
             _originalValues.Clear();
             foreach (var employee in Employees)
             {
