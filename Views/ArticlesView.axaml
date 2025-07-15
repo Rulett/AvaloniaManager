@@ -277,10 +277,11 @@
 		<StackPanel Orientation="Horizontal" Spacing="10">
 			<Button Content="Добавить статьи" Command="{Binding AddArticlesCommand}"
                     IsVisible="{Binding IsAddingMode, Converter={StaticResource InverseBoolToVisibility}}"/>
-			<Button Content="Сохранить изменения" Command="{Binding SaveChangesCommand}"
-                    IsEnabled="{Binding HasChanges}"
-                    Classes="Primary"
-                    IsVisible="{Binding IsAddingMode, Converter={StaticResource InverseBoolToVisibility}}"/>
+			<Button Content="Сохранить изменения"
+        Command="{Binding SaveChangesCommand}"
+        IsEnabled="{Binding HasChanges}"
+        Classes="Primary"
+        IsVisible="{Binding IsAddingMode, Converter={StaticResource InverseBoolToVisibility}}"/>
 		</StackPanel>
 
 

@@ -6,6 +6,7 @@ using ReactiveUI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reactive;
@@ -129,24 +130,19 @@ namespace AvaloniaManager.ViewModels
                 .Throttle(TimeSpan.FromMilliseconds(300))
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(_ => LoadEmployees().ConfigureAwait(false));
-            
+
             // Отслеживание изменений в таблице
             this.WhenAnyValue(x => x.Employees)
-        .Subscribe(employees =>
-        {
-            _originalValues.Clear();
-            foreach (var employee in employees)
-            {
-                _originalValues[employee] = employee.Clone(); 
-
-                employee.PropertyChanged += (s, e) =>
-                {
-                    HasChanges = true;
-                    Debug.WriteLine($"Изменение свойства {e.PropertyName}, HasChanges = {HasChanges}");
-                };
-            }
-            TrackAllChanges();
-        });
+                    .Subscribe(employees =>
+                          {
+                             _originalValues.Clear();
+                             foreach (var employee in employees)
+                                {
+                                    _originalValues[employee] = employee.Clone();
+                                    employee.PropertyChanged += Employee_PropertyChanged; 
+                                }
+                            TrackAllChanges();
+                            });
 
             // Первоначальная загрузка
             LoadEmployees().ConfigureAwait(false);
@@ -462,7 +458,7 @@ namespace AvaloniaManager.ViewModels
             HasChanges = false;
             Debug.WriteLine($"DiscardChanges: Все изменения отменены, HasChanges = {HasChanges}");
 
-            await DialogService.ShowSuccessNotification("Изменения отменены");
+            await DialogService.ShowErrorNotification("Изменения отменены");
         }
 
         private async Task NextPage()
@@ -495,6 +491,26 @@ namespace AvaloniaManager.ViewModels
 
             CurrentPage--;
             await LoadEmployees();
+        }
+        public void Cleanup()
+        {
+            foreach (var employee in Employees)
+            {
+                employee.PropertyChanged -= Employee_PropertyChanged;
+            }
+
+            _originalValues.Clear();
+            _employees.Clear();
+            _newEmployees.Clear();
+
+            _hasChanges = false;
+            _isAddingMode = false;
+        }
+
+        private void Employee_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            HasChanges = true;
+            Debug.WriteLine($"Изменение свойства {e.PropertyName}, HasChanges = {HasChanges}");
         }
     }
 }

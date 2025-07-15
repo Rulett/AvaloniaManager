@@ -6,6 +6,7 @@ using ReactiveUI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -19,11 +20,14 @@ namespace AvaloniaManager.ViewModels
     {
         private ObservableCollection<Article> _articles = new();
         private ObservableCollection<Employee> _employees = new();
+        private HashSet<Article> _trackedArticles = new();
         private int _selectedMonth = DateTime.Now.Month;
         private int _selectedYear = DateTime.Now.Year;
         private int _pageSize = 10;
         private int _currentPage = 1;
         private Article _selectedArticle;
+
+        public bool HasUnsavedChanges => HasChanges || (IsAddingMode && NewArticles.Any());
 
         public ObservableCollection<Article> Articles
         {
@@ -87,10 +91,9 @@ namespace AvaloniaManager.ViewModels
                 this.RaiseAndSetIfChanged(ref _selectedMonth, value);
                 this.RaisePropertyChanged(nameof(MonthYearHeader));
                 CurrentPage = 1;
-                if (!IsAddingMode) 
+                if (!IsAddingMode)
                 {
-                    LoadArticles();
-                    LoadEmployees();
+                    HandleMonthYearChange().ConfigureAwait(false);
                 }
             }
         }
@@ -105,9 +108,22 @@ namespace AvaloniaManager.ViewModels
                 CurrentPage = 1;
                 if (!IsAddingMode)
                 {
-                    LoadArticles();
-                    LoadEmployees();
+                    HandleMonthYearChange().ConfigureAwait(false);
                 }
+            }
+        }
+
+        private async Task HandleMonthYearChange()
+        {
+            if (await ConfirmNavigation())
+            {
+                await LoadArticles();
+                await LoadEmployees();
+            }
+            else
+            {
+                this.RaisePropertyChanged(nameof(SelectedMonth));
+                this.RaisePropertyChanged(nameof(SelectedYear));
             }
         }
 
@@ -157,7 +173,7 @@ namespace AvaloniaManager.ViewModels
                 IsAddingMode = false;
                 NewArticles.Clear();
                 await LoadEmployees();
-                await LoadArticles().ConfigureAwait(false);
+                await LoadArticles();
             });
 
             SaveArticlesCommand = ReactiveCommand.CreateFromTask(async () =>
@@ -174,8 +190,36 @@ namespace AvaloniaManager.ViewModels
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(_ => LoadArticles().ConfigureAwait(false));
 
+            this.WhenAnyValue(x => x.Articles)
+    .Subscribe(articles =>
+    {
+        foreach (var article in _trackedArticles)
+        {
+            article.PropertyChanged -= Article_PropertyChanged;
+        }
+        _trackedArticles.Clear();
+        _originalValues.Clear();
+
+        foreach (var article in articles)
+        {
+            _originalValues[article] = article.Clone();
+            article.PropertyChanged += Article_PropertyChanged;
+            _trackedArticles.Add(article);
+        }
+        TrackAllChanges();
+    });
+
             LoadEmployees();
             LoadArticles();
+        }
+
+        private void Article_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(Article.Employee))
+            {
+                HasChanges = true;
+                Debug.WriteLine($"Изменение свойства {e.PropertyName}, HasChanges = {HasChanges}");
+            }
         }
 
         private async Task LoadEmployees()
@@ -194,20 +238,28 @@ namespace AvaloniaManager.ViewModels
 
         private async Task NextPage()
         {
-            if (HasNextPage)
+            if (!HasNextPage) return;
+
+            if (HasChanges && !await ConfirmNavigation())
             {
-                CurrentPage++;
-                await LoadArticles();
+                return;
             }
+
+            CurrentPage++;
+            await LoadArticles();
         }
 
         private async Task PreviousPage()
         {
-            if (HasPreviousPage)
+            if (!HasPreviousPage) return;
+
+            if (HasChanges && !await ConfirmNavigation())
             {
-                CurrentPage--;
-                await LoadArticles();
+                return;
             }
+
+            CurrentPage--;
+            await LoadArticles();
         }
 
         private async Task LoadArticles()
@@ -219,22 +271,30 @@ namespace AvaloniaManager.ViewModels
                 var startDate = new DateTime(SelectedYear, SelectedMonth, 1);
                 var endDate = startDate.AddMonths(1).AddDays(-1);
 
+                var existingEmployees = Employees.ToDictionary(e => e.Id);
+
                 var articles = await db.Articles
                     .Include(a => a.Employee)
                     .Where(a => a.ReleaseDate >= startDate && a.ReleaseDate <= endDate)
-                    .OrderBy(a => a.ArticleName) 
+                    .OrderBy(a => a.ArticleName)
                     .Skip((CurrentPage - 1) * PageSize)
                     .Take(PageSize)
                     .AsNoTracking()
                     .ToListAsync();
 
+                // Reuse existing employee references if possible
                 foreach (var article in articles)
                 {
                     article.Itog = (decimal)(article.Summa + (article.Summa * article.Bonus / 100));
-                    Debug.WriteLine($"Article: {article.ArticleName}, Employee: {article.Employee?.FullName ?? "null"}");
+
+                    if (article.Employee != null && existingEmployees.TryGetValue(article.Employee.Id, out var existingEmployee))
+                    {
+                        article.Employee = existingEmployee;
+                    }
                 }
 
                 Articles = new ObservableCollection<Article>(articles);
+
                 this.RaisePropertyChanged(nameof(HasNextPage));
                 this.RaisePropertyChanged(nameof(HasPreviousPage));
             }
@@ -391,9 +451,9 @@ namespace AvaloniaManager.ViewModels
             }
         }
 
-        private async Task<bool> ConfirmNavigation()
+        public async Task<bool> ConfirmNavigation()
         {
-            if (!HasChanges) return true;
+            if (!HasUnsavedChanges) return true;
 
             var result = await DialogService.ShowConfirmationDialog(
                 "Несохраненные изменения",
@@ -401,25 +461,18 @@ namespace AvaloniaManager.ViewModels
 
             if (result)
             {
-                await SaveChanges();
+                if (IsAddingMode)
+                {
+                    await SaveArticles();
+                }
+                else
+                {
+                    await SaveChanges();
+                }
             }
             else
             {
-                // Отмена изменения
-                foreach (var (article, original) in _originalValues)
-                {
-                    article.ArticleName = original.ArticleName;
-                    article.Employee = original.Employee;
-                    article.SMI = original.SMI;
-                    article.ReleaseDate = original.ReleaseDate;
-                    article.PubicationId = original.PubicationId;
-                    article.NewspaperLine = original.NewspaperLine;
-                    article.Summa = original.Summa;
-                    article.Bonus = original.Bonus;
-                    article.Reklama = original.Reklama;
-                    article.ContentType = original.ContentType;
-                }
-                HasChanges = false;
+                await DiscardChanges();
             }
 
             return true;
@@ -427,10 +480,10 @@ namespace AvaloniaManager.ViewModels
 
         private async void StartAdding()
         {
-            if (ConfirmNavigation().GetAwaiter().GetResult())
+            if (await ConfirmNavigation())
             {
                 NewArticles.Clear();
-                await LoadEmployees(); 
+                await LoadEmployees();
                 IsAddingMode = true;
             }
         }
@@ -453,6 +506,77 @@ namespace AvaloniaManager.ViewModels
         private void ResetAdding()
         {
             NewArticles.Clear();
+        }
+
+        private void TrackAllChanges()
+        {
+            bool anyChanges = false;
+            foreach (var article in Articles)
+            {
+                if (!_originalValues.TryGetValue(article, out var original))
+                {
+                    Debug.WriteLine($"Обнаружена новая статья без оригинальных значений");
+                    anyChanges = true;
+                    continue;
+                }
+
+                if (article.ArticleName != original.ArticleName ||
+                    article.Employee != original.Employee ||
+                    article.SMI != original.SMI ||
+                    article.ReleaseDate != original.ReleaseDate ||
+                    article.PubicationId != original.PubicationId ||
+                    article.NewspaperLine != original.NewspaperLine ||
+                    article.Summa != original.Summa ||
+                    article.Bonus != original.Bonus ||
+                    article.Reklama != original.Reklama ||
+                    article.ContentType != original.ContentType)
+                {
+                    Debug.WriteLine($"Обнаружены изменения в статье {article.ArticleName}");
+                    anyChanges = true;
+                }
+            }
+            HasChanges = anyChanges;
+            Debug.WriteLine($"TrackAllChanges: HasChanges = {HasChanges}");
+        }
+
+        private async Task DiscardChanges()
+        {
+            var originalCopies = _originalValues.ToDictionary(kv => kv.Key, kv => kv.Value.Clone());
+
+            foreach (var (article, original) in originalCopies)
+            {
+                article.ArticleName = original.ArticleName;
+                article.Employee = original.Employee;
+                article.SMI = original.SMI;
+                article.ReleaseDate = original.ReleaseDate;
+                article.PubicationId = original.PubicationId;
+                article.NewspaperLine = original.NewspaperLine;
+                article.Summa = original.Summa;
+                article.Bonus = original.Bonus;
+                article.Reklama = original.Reklama;
+                article.ContentType = original.ContentType;
+            }
+
+            _originalValues.Clear();
+            foreach (var article in Articles)
+            {
+                _originalValues[article] = article.Clone();
+            }
+
+            HasChanges = false;
+            Debug.WriteLine($"DiscardChanges: Все изменения отменены, HasChanges = {HasChanges}");
+
+            await DialogService.ShowErrorNotification("Изменения отменены");
+        }
+
+        public void Cleanup()
+        {
+            foreach (var article in _trackedArticles)
+            {
+                article.PropertyChanged -= Article_PropertyChanged;
+            }
+            _trackedArticles.Clear();
+            _originalValues.Clear();
         }
     }
 }

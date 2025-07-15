@@ -130,10 +130,13 @@ namespace AvaloniaManager.Models
             get => _employee;
             set
             {
-                this.RaiseAndSetIfChanged(ref _employee, value);
-                if (value != null)
+                if (!Equals(_employee, value))
                 {
-                    EmployeeId = value.Id;
+                    this.RaiseAndSetIfChanged(ref _employee, value);
+                    if (value != null)
+                    {
+                        EmployeeId = value.Id;
+                    }
                 }
             }
         }
@@ -142,19 +145,18 @@ namespace AvaloniaManager.Models
         {
             return new Article
             {
-                Id = this.Id,
                 ArticleName = this.ArticleName,
+                Employee = this.Employee,
                 EmployeeId = this.EmployeeId,
+                SMI = this.SMI,
+                ReleaseDate = this.ReleaseDate,
+                PubicationId = this.PubicationId,
+                NewspaperLine = this.NewspaperLine,
                 Summa = this.Summa,
                 Bonus = this.Bonus,
                 Itog = this.Itog,
-                SMI = this.SMI,
                 Reklama = this.Reklama,
-                PubicationId = this.PubicationId,
-                NewspaperLine = this.NewspaperLine,
-                ReleaseDate = this.ReleaseDate,
-                ContentType = this.ContentType,
-                Employee = this.Employee?.Clone()
+                ContentType = this.ContentType
             };
         }
 

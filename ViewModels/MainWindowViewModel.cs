@@ -127,11 +127,11 @@ namespace AvaloniaManager.ViewModels
         public async Task<bool> CheckForUnsavedChanges()
         {
             Debug.WriteLine($"CheckForUnsavedChanges() - текущая вкладка: {SelectedPageIndex}");
-            
+
             switch (SelectedPageIndex)
             {
-                case 1:
-                    Debug.WriteLine($"Проверяем изменения в EmployeesViewModel...EmployeesViewModel.HasChanges= {EmployeesViewModel.HasChanges}");
+                case 1: // Employees
+                    Debug.WriteLine($"Проверяем изменения в EmployeesViewModel... EmployeesViewModel.HasChanges= {EmployeesViewModel.HasChanges}");
                     if (EmployeesViewModel.HasUnsavedChanges)
                     {
                         Debug.WriteLine("Обнаружены несохраненные изменения, запрашиваем подтверждение...");
@@ -139,6 +139,17 @@ namespace AvaloniaManager.ViewModels
                     }
                     Debug.WriteLine("Нет несохраненных изменений");
                     return true;
+
+                case 2: // Articles
+                    Debug.WriteLine($"Проверяем изменения в ArticlesViewModel... ArticlesViewModel.HasChanges= {ArticlesViewModel.HasChanges}");
+                    if (ArticlesViewModel.HasUnsavedChanges)
+                    {
+                        Debug.WriteLine("Обнаружены несохраненные изменения, запрашиваем подтверждение...");
+                        return await ArticlesViewModel.ConfirmNavigation();
+                    }
+                    Debug.WriteLine("Нет несохраненных изменений");
+                    return true;
+
                 default:
                     Debug.WriteLine("Для текущей вкладки проверка не требуется");
                     return true;
@@ -146,21 +157,27 @@ namespace AvaloniaManager.ViewModels
         }
 
         public async Task<bool> CanCloseApplication()
-{
-    Debug.WriteLine("Проверка изменений перед закрытием приложения");
-    
-    // Проверяем все вкладки на наличие изменений
-    if (EmployeesViewModel.HasUnsavedChanges)
-    {
-        var result = await DialogService.ShowConfirmationDialog(
-            "Несохраненные изменения",
-            "У вас есть несохраненные изменения. Закрыть приложение?");
-        
-        return result;
-    }
-    
-    return true;
-}
+        {
+            Debug.WriteLine("Проверка изменений перед закрытием приложения");
+
+            if (EmployeesViewModel.HasUnsavedChanges || ArticlesViewModel.HasUnsavedChanges)
+            {
+                var result = await DialogService.ShowConfirmationDialog(
+                    "Несохраненные изменения",
+                    "У вас есть несохраненные изменения. Закрыть приложение?");
+
+                if (result)
+                {
+                    EmployeesViewModel.Cleanup();
+                    ArticlesViewModel.Cleanup();
+                }
+                return result;
+            }
+
+            EmployeesViewModel.Cleanup();
+            ArticlesViewModel.Cleanup();
+            return true;
+        }
 
         private void UpdatePageTitle() 
         {
