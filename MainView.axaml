@@ -142,7 +142,8 @@
                    IsVisible="{Binding #PageCarousel.DataContext.IsAuthenticated}"/>
 							  <views:ArticlesView DataContext = "{Binding ArticlesViewModel}" 
 				   IsVisible="{Binding #PageCarousel.DataContext.IsAuthenticated}"/>
-							  <views:ReportsView IsVisible="{Binding IsAuthenticated}"/>
+							  <views:ReportsView DataContext = "{Binding ReportsViewModel}"
+				   IsVisible="{Binding #PageCarousel.DataContext.IsAuthenticated}"/>
 						</Carousel>
 					</ScrollViewer>
 				</DockPanel>

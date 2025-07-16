@@ -13,7 +13,7 @@ namespace AvaloniaManager.ViewModels
     {
         public EmployeesViewModel EmployeesViewModel { get; } = new EmployeesViewModel();
         public ArticlesViewModel ArticlesViewModel { get; } = new ArticlesViewModel();
-        //public ReportsViewModel ReportsViewModel { get; } = new ReportsViewModel();
+        public ReportsViewModel ReportsViewModel { get; } = new ReportsViewModel();
 
         private bool _isAuthenticated=true;
         public bool IsAuthenticated

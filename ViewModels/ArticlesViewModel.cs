@@ -285,7 +285,6 @@ namespace AvaloniaManager.ViewModels
                     .AsNoTracking()
                     .ToListAsync();
 
-                // Reuse existing employee references if possible
                 foreach (var article in articles)
                 {
                     article.Itog = (decimal)(article.Summa + (article.Summa * article.Bonus / 100));
