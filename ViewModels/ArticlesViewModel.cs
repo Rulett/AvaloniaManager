@@ -27,7 +27,7 @@ namespace AvaloniaManager.ViewModels
         private int _currentPage = 1;
         private Article _selectedArticle;
 
-        public bool HasUnsavedChanges => HasChanges || (IsAddingMode && NewArticles.Any());
+        public bool HasUnsavedChanges => HasChanges;
 
         public ObservableCollection<Article> Articles
         {
@@ -191,23 +191,24 @@ namespace AvaloniaManager.ViewModels
                 .Subscribe(_ => LoadArticles().ConfigureAwait(false));
 
             this.WhenAnyValue(x => x.Articles)
-    .Subscribe(articles =>
-    {
-        foreach (var article in _trackedArticles)
-        {
-            article.PropertyChanged -= Article_PropertyChanged;
-        }
-        _trackedArticles.Clear();
-        _originalValues.Clear();
+                 .Where(_ => !IsAddingMode) 
+                 .Subscribe(articles =>
+                    {
+                         foreach (var article in _trackedArticles)
+                             {
+                              article.PropertyChanged -= Article_PropertyChanged;
+                             }
+                          _trackedArticles.Clear();
+                          _originalValues.Clear();
 
-        foreach (var article in articles)
-        {
-            _originalValues[article] = article.Clone();
-            article.PropertyChanged += Article_PropertyChanged;
-            _trackedArticles.Add(article);
-        }
-        TrackAllChanges();
-    });
+                         foreach (var article in articles)
+                             {
+                                 _originalValues[article] = article.Clone();
+                                 article.PropertyChanged += Article_PropertyChanged;
+                                 _trackedArticles.Add(article);
+                             }
+                         TrackAllChanges();
+                     });
 
             LoadEmployees();
             LoadArticles();
@@ -215,6 +216,8 @@ namespace AvaloniaManager.ViewModels
 
         private void Article_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
+            if (IsAddingMode) return; 
+
             if (e.PropertyName != nameof(Article.Employee))
             {
                 HasChanges = true;
@@ -453,7 +456,9 @@ namespace AvaloniaManager.ViewModels
 
         public async Task<bool> ConfirmNavigation()
         {
-            if (!HasUnsavedChanges) return true;
+            if (IsAddingMode) return true;
+
+            if (!HasChanges) return true;
 
             var result = await DialogService.ShowConfirmationDialog(
                 "Несохраненные изменения",
@@ -461,14 +466,7 @@ namespace AvaloniaManager.ViewModels
 
             if (result)
             {
-                if (IsAddingMode)
-                {
-                    await SaveArticles();
-                }
-                else
-                {
-                    await SaveChanges();
-                }
+                await SaveChanges();
             }
             else
             {
@@ -485,6 +483,7 @@ namespace AvaloniaManager.ViewModels
                 NewArticles.Clear();
                 await LoadEmployees();
                 IsAddingMode = true;
+                HasChanges = false;
             }
         }
 
@@ -510,6 +509,12 @@ namespace AvaloniaManager.ViewModels
 
         private void TrackAllChanges()
         {
+            if (IsAddingMode) 
+            {
+                HasChanges = false;
+                return;
+            }
+
             bool anyChanges = false;
             foreach (var article in Articles)
             {

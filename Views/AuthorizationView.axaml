@@ -8,7 +8,6 @@
              d:DesignWidth="400" d:DesignHeight="300"
              x:Class="AvaloniaManager.Views.AuthorizationView"
              x:DataType="vm:MainWindowViewModel">
-	<!-- Added proper x:DataType pointing to MainViewModel -->
 
 	<Grid VerticalAlignment="Center" HorizontalAlignment="Center" Width="300">
 		<StackPanel Spacing="16">
